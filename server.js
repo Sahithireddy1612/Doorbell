@@ -2239,6 +2239,238 @@ app.get('/api/owner/:ownerId/test-google-credentials', async (req, res) => {
   }
 });
 
+
+app.get('/api/oauth/mobile-redirect', async (req, res) => {
+  const { code, state, error, error_description } = req.query;
+  
+  console.log('📱 OAuth redirect received:', { 
+    hasCode: !!code, 
+    hasError: !!error,
+    state: state 
+  });
+  
+  let success = false;
+  let errorMessage = '';
+  let ownerId = null;
+  let customerClientId = null;
+  let customerClientSecret = null;
+  
+  if (error) {
+    console.error('❌ OAuth error:', error, error_description);
+    errorMessage = error_description || error;
+  } else if (code && state) {
+    try {
+      // Parse state to get owner info
+      const stateData = JSON.parse(state);
+      ownerId = stateData.ownerId;
+      customerClientId = stateData.customerClientId;
+      customerClientSecret = stateData.customerClientSecret;
+      
+      console.log('🔄 Exchanging code for tokens for owner:', ownerId);
+      
+      // Get Web client credentials from env
+      const webClientId = process.env.WEB_GOOGLE_CLIENT_ID || process.env.GOOGLE_ANDROID_CLIENT_ID;
+      const webClientSecret = process.env.WEB_GOOGLE_SECRET_KEY || process.env.GOOGLE_WEB_CLIENT_SECRET;
+      const redirectUri = `${process.env.BACKEND_URL}/api/oauth/mobile-redirect`;
+      
+      console.log('🔑 Using Web Client:', webClientId?.substring(0, 30) + '...');
+      
+      // Exchange code for tokens using Web client
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          code: code,
+          client_id: webClientId,
+          client_secret: webClientSecret,
+          redirect_uri: redirectUri,
+          grant_type: 'authorization_code'
+        })
+      });
+      
+      const tokens = await tokenResponse.json();
+      
+      console.log('📦 Token response:', {
+        ok: tokenResponse.ok,
+        hasAccess: !!tokens.access_token,
+        hasRefresh: !!tokens.refresh_token,
+        error: tokens.error
+      });
+      
+      if (!tokenResponse.ok || !tokens.access_token) {
+        throw new Error(tokens.error_description || tokens.error || 'Token exchange failed');
+      }
+      
+      console.log('✅ Tokens received');
+      
+      // Save tokens to database using CUSTOMER's credentials
+      await pool.query(
+        `UPDATE qr_portal.t_master_owner_details 
+         SET google_access_token = $1,
+             google_refresh_token = COALESCE($2, google_refresh_token),
+             google_token_expiry = $3,
+             google_client_id = $4,
+             google_client_secret = $5
+         WHERE owner_id = $6`,
+        [
+          tokens.access_token,
+          tokens.refresh_token || null,
+          tokens.expires_in ? new Date(Date.now() + tokens.expires_in * 1000) : null,
+          customerClientId,
+          customerClientSecret,
+          ownerId
+        ]
+      );
+      
+      console.log('✅ Tokens saved to database for owner:', ownerId);
+      success = true;
+      
+    } catch (err) {
+      console.error('❌ Token exchange error:', err);
+      errorMessage = err.message || 'Failed to exchange authorization code';
+    }
+  } else {
+    errorMessage = 'Missing authorization code or state';
+  }
+  
+  // Build deep link URL for Android app
+  const deepLinkScheme = 'com.camera.doorbell://oauth';
+  let deepLink = deepLinkScheme;
+  
+  const params = new URLSearchParams();
+  if (success) {
+    params.append('success', 'true');
+    if (ownerId) params.append('ownerId', ownerId);
+  } else {
+    params.append('error', errorMessage);
+  }
+  
+  if (params.toString()) {
+    deepLink += '?' + params.toString();
+  }
+  
+  console.log('🔗 Redirecting to deep link:', deepLink);
+  
+  // Return HTML with automatic redirect
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>${success ? '✅ Connected!' : '❌ Error'}</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          margin: 0;
+          background: linear-gradient(135deg, ${success ? '#10b981 0%, #059669 100%' : '#ef4444 0%, #dc2626 100%'});
+          color: white;
+        }
+        .container {
+          text-align: center;
+          padding: 2rem;
+          max-width: 500px;
+        }
+        .icon {
+          font-size: 5rem;
+          margin-bottom: 1.5rem;
+          animation: bounce 0.5s ease-in-out;
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-20px); }
+        }
+        h1 { 
+          margin: 0 0 1rem; 
+          font-size: 2rem;
+          font-weight: bold;
+        }
+        p { 
+          margin: 0.5rem 0; 
+          opacity: 0.95; 
+          line-height: 1.6;
+          font-size: 1.1rem;
+        }
+        .spinner {
+          width: 50px;
+          height: 50px;
+          border: 4px solid rgba(255,255,255,0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin: 1.5rem auto;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+        .manual-link {
+          margin-top: 2rem;
+          padding: 1.5rem;
+          background: rgba(255,255,255,0.2);
+          border-radius: 12px;
+          display: none;
+        }
+        .manual-link a {
+          color: white;
+          text-decoration: none;
+          font-weight: bold;
+          font-size: 1.2rem;
+          padding: 12px 24px;
+          background: rgba(0,0,0,0.3);
+          border-radius: 8px;
+          display: inline-block;
+          margin-top: 10px;
+        }
+        .error-details {
+          background: rgba(0,0,0,0.3);
+          padding: 1rem;
+          border-radius: 8px;
+          margin-top: 1rem;
+          font-size: 0.9rem;
+          word-break: break-word;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="icon">${success ? '✅' : '❌'}</div>
+        <h1>${success ? 'Google Drive Connected!' : 'Authorization Failed'}</h1>
+        <p>
+          ${success 
+            ? 'Your videos will now be automatically saved to Google Drive! 🎉' 
+            : 'Something went wrong during authorization.'
+          }
+        </p>
+        ${!success ? `<div class="error-details">Error: ${errorMessage}</div>` : ''}
+        <div class="spinner"></div>
+        <p style="font-size: 0.95rem;">Returning to app...</p>
+        <div class="manual-link" id="manualLink">
+          <p>App didn't open automatically?</p>
+          <a href="${deepLink}" id="deepLinkBtn">👉 Click here to return to app</a>
+        </div>
+      </div>
+      <script>
+        console.log('Redirect URL:', '${deepLink}');
+        
+        // Attempt automatic redirect
+        setTimeout(() => {
+          window.location.href = '${deepLink}';
+          
+          // Show manual link after 2 seconds
+          setTimeout(() => {
+            document.getElementById('manualLink').style.display = 'block';
+          }, 2000);
+        }, 1000);
+      </script>
+    </body>
+    </html>
+  `);
+});
+
 /* ----------------------- FETCH OWNER DETAILS ----------------------- */
 
 app.get('/api/owner/:ownerId', async (req, res) => {
