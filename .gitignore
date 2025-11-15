@@ -1,0 +1,17 @@
+# Ignore node_modules directory
+node_modules/
+
+# Ignore .env file containing sensitive data
+.env
+
+# Ignore npm-debug.log (node.js debug log file)
+npm-debug.log
+
+# Ignore yarn.lock (if you are using Yarn instead of npm)
+yarn.lock
+
+# Ignore MacOS specific files (if on macOS)
+.DS_Store
+
+# Ignore VSCode settings (optional, if you want)
+.vscode/
