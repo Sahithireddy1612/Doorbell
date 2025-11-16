@@ -1532,16 +1532,182 @@ app.post('/api/ring', (req, res) => {
 //   }
 // });
 
-// Add this function after your transporter setup in server.js
+// Replace your /api/owner/create endpoint in server.js with this:
 
-/**
- * Send welcome email to newly created owner
- */
+app.post('/api/owner/create', authMiddleware, async (req, res) => {
+  try {
+    console.log('📥 CREATE OWNER REQUEST RECEIVED');
+    console.log('📦 Request body:', JSON.stringify(req.body, null, 2));
+    console.log('👤 Authenticated user:', req.user);
+
+    // ✅ Extract all fields from req.body at the top
+    const { 
+      owner_name, 
+      owner_email, 
+      owner_phone, 
+      ssid, 
+      dev_password, 
+      google_client_id, 
+      google_client_secret 
+    } = req.body;
+
+    // ✅ Validate each field
+    console.log('🔍 Validating fields...');
+    if (!owner_name?.trim()) {
+      console.error('❌ Missing: owner_name');
+      return res.status(400).json({ message: 'Owner name is required' });
+    }
+    if (!owner_email?.trim()) {
+      console.error('❌ Missing: owner_email');
+      return res.status(400).json({ message: 'Owner email is required' });
+    }
+    if (!owner_phone?.trim()) {
+      console.error('❌ Missing: owner_phone');
+      return res.status(400).json({ message: 'Owner phone is required' });
+    }
+    if (!ssid?.trim()) {
+      console.error('❌ Missing: ssid');
+      return res.status(400).json({ message: 'SSID is required' });
+    }
+    if (!dev_password?.trim()) {
+      console.error('❌ Missing: dev_password');
+      return res.status(400).json({ message: 'Device password is required' });
+    }
+
+    console.log('✅ All fields validated');
+
+    // Get accesspoint_url from .env
+    const accesspoint_url = process.env.QR_ACCESS_URL;
+    console.log('🔗 QR_ACCESS_URL from env:', accesspoint_url);
+
+    if (!accesspoint_url) {
+      console.error('❌ QR_ACCESS_URL not configured in .env');
+      return res.status(500).json({ 
+        message: 'Server configuration error: QR_ACCESS_URL not set in environment' 
+      });
+    }
+
+    console.log('💾 Inserting into database...');
+
+    const insert = `
+      INSERT INTO qr_portal.t_master_owner_details
+      (owner_name, owner_email, owner_phone, ssid, dev_password, accesspoint_url, 
+       google_client_id, google_client_secret)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      RETURNING owner_id, owner_name, owner_email, owner_phone, ssid, dev_password, 
+                accesspoint_url, password, google_client_id, google_client_secret
+    `;
+
+    const { rows } = await pool.query(insert, [
+      owner_name.trim(), 
+      owner_email.trim(), 
+      owner_phone.trim(), 
+      ssid.trim(), 
+      dev_password, 
+      accesspoint_url,
+      google_client_id?.trim() || null, 
+      google_client_secret?.trim() || null
+    ]);
+
+    if (!rows.length) {
+      console.error('❌ Database insert returned no rows');
+      return res.status(500).json({ message: 'Database insert failed' });
+    }
+
+    const owner = rows[0];
+    console.log('✅ Owner inserted with ID:', owner.owner_id);
+
+    // Generate QR pointing to frontend
+    const recordUrl = `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
+    const qrPath = path.join(qrDir, `${owner.owner_id}-single.png`);
+    
+    console.log('🖼️ Generating QR code...');
+    console.log('📱 QR URL:', recordUrl);
+    
+    await QRCode.toFile(qrPath, recordUrl, { width: 400 });
+    console.log('✅ QR code saved to:', qrPath);
+
+    // 📧 Send welcome email with credentials
+    console.log('📧 Sending welcome email...');
+    let emailResult = { success: false };
+    
+    try {
+      emailResult = await sendOwnerWelcomeEmail({
+        owner_email: owner.owner_email,
+        owner_name: owner.owner_name,
+        owner_id: owner.owner_id,
+        password: owner.password, // Auto-generated password from DB
+        ssid: owner.ssid
+      });
+
+      if (emailResult.success) {
+        console.log('✅ Welcome email sent to:', owner.owner_email);
+      } else {
+        console.warn('⚠️ Email failed but continuing:', emailResult.error);
+      }
+    } catch (emailError) {
+      console.error('❌ Email error:', emailError);
+      // Continue anyway - don't fail owner creation due to email
+    }
+
+    // Prepare response
+    const response = {
+      success: true,
+      message: 'Owner created successfully',
+      owner: {
+        owner_id: owner.owner_id,
+        owner_name: owner.owner_name,
+        owner_email: owner.owner_email,
+        ssid: owner.ssid,
+        dev_password: owner.dev_password,
+        accesspoint_url: owner.accesspoint_url,
+        google_client_id: owner.google_client_id || null,
+        google_client_secret: owner.google_client_secret || null
+      },
+      qr_image: `/qrcodes/${owner.owner_id}-single.png`,
+      recordUrl,
+      emailSent: emailResult.success
+    };
+
+    console.log('🎉 SUCCESS! Sending response...');
+    res.json(response);
+
+  } catch (err) {
+    console.error('❌❌❌ CRITICAL ERROR IN OWNER CREATE:');
+    console.error('Error message:', err.message);
+    console.error('Error stack:', err.stack);
+    console.error('Error code:', err.code);
+    
+    // Handle specific database errors
+    if (err.code === '23505') { // Unique violation
+      if (err.constraint?.includes('email')) {
+        return res.status(400).json({ 
+          message: 'Email already exists',
+          error: 'duplicate_email'
+        });
+      }
+      if (err.constraint?.includes('ssid')) {
+        return res.status(400).json({ 
+          message: 'SSID already exists',
+          error: 'duplicate_ssid'
+        });
+      }
+    }
+
+    res.status(500).json({ 
+      message: 'Failed to create owner',
+      error: err.message,
+      details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  }
+});
+
+// ✅ Make sure this email function is defined BEFORE the endpoint above
 async function sendOwnerWelcomeEmail(ownerData) {
   try {
     const { owner_email, owner_name, owner_id, password, ssid } = ownerData;
     
-    console.log('📧 Sending welcome email to:', owner_email);
+    console.log('📧 Preparing welcome email for:', owner_email);
 
     const dashboardUrl = process.env.FRONTEND_URL || 'https://your-dashboard-url.com';
     
@@ -1578,30 +1744,12 @@ async function sendOwnerWelcomeEmail(ownerData) {
             margin: 0 0 8px 0;
             font-size: 28px;
           }
-          .header p {
-            color: #666;
-            margin: 0;
-            font-size: 16px;
-          }
-          .content {
-            padding: 24px 0;
-          }
-          .welcome-text {
-            font-size: 18px;
-            color: #333;
-            margin-bottom: 24px;
-          }
           .info-box {
             background-color: #f8f9fa;
             border-left: 4px solid #4285f4;
             padding: 16px;
             margin: 16px 0;
             border-radius: 4px;
-          }
-          .info-box h3 {
-            margin: 0 0 12px 0;
-            color: #1a1a1a;
-            font-size: 16px;
           }
           .credential-item {
             background-color: #fff;
@@ -1614,7 +1762,6 @@ async function sendOwnerWelcomeEmail(ownerData) {
             font-size: 12px;
             color: #666;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             margin-bottom: 4px;
           }
           .credential-value {
@@ -1632,28 +1779,6 @@ async function sendOwnerWelcomeEmail(ownerData) {
             border-radius: 8px;
             font-weight: 600;
             margin: 16px 0;
-            text-align: center;
-          }
-          .button:hover {
-            background-color: #3367d6;
-          }
-          .features {
-            background-color: #f0f7ff;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 24px 0;
-          }
-          .features h3 {
-            color: #1a1a1a;
-            margin: 0 0 16px 0;
-          }
-          .features ul {
-            margin: 0;
-            padding-left: 20px;
-          }
-          .features li {
-            margin: 8px 0;
-            color: #333;
           }
           .warning {
             background-color: #fff3cd;
@@ -1662,45 +1787,27 @@ async function sendOwnerWelcomeEmail(ownerData) {
             margin: 16px 0;
             border-radius: 4px;
           }
-          .warning strong {
-            color: #856404;
-          }
-          .footer {
-            text-align: center;
-            padding-top: 24px;
-            border-top: 2px solid #f0f0f0;
-            color: #666;
-            font-size: 14px;
-          }
-          .footer a {
-            color: #4285f4;
-            text-decoration: none;
-          }
         </style>
       </head>
       <body>
         <div class="container">
-          <!-- Header -->
           <div class="header">
             <h1>🔔 Welcome to DoorBell!</h1>
             <p>Your Smart Doorbell System is Ready</p>
           </div>
 
-          <!-- Content -->
-          <div class="content">
-            <p class="welcome-text">
+          <div style="padding: 24px 0;">
+            <p style="font-size: 18px;">
               Hello <strong>${owner_name}</strong>,
             </p>
             
             <p>
               Your DoorBell account has been successfully created! You now have access to your 
-              personalized dashboard where you can manage your doorbell, view visitor recordings, 
-              and access all uploaded videos.
+              personalized dashboard.
             </p>
 
-            <!-- Login Credentials -->
             <div class="info-box">
-              <h3>🔐 Your Dashboard Login Credentials</h3>
+              <h3 style="margin: 0 0 12px 0;">🔐 Your Dashboard Login Credentials</h3>
               
               <div class="credential-item">
                 <div class="credential-label">Owner ID</div>
@@ -1718,59 +1825,24 @@ async function sendOwnerWelcomeEmail(ownerData) {
               </div>
             </div>
 
-            <!-- Security Warning -->
             <div class="warning">
-              <strong>⚠️ Important Security Notice:</strong><br>
-              Please change your password after your first login. Keep these credentials secure 
-              and never share them with anyone.
+              <strong>⚠️ Important:</strong> Please change your password after first login.
             </div>
 
-            <!-- Login Button -->
             <center>
               <a href="${dashboardUrl}/login" class="button">
                 🚀 Access Your Dashboard
               </a>
             </center>
 
-            <!-- Features -->
-            <div class="features">
-              <h3>✨ What You Can Do:</h3>
-              <ul>
-                <li>📹 View all visitor recordings in real-time</li>
-                <li>☁️ Automatic Google Drive backup (if connected)</li>
-                <li>📱 Receive instant email notifications</li>
-                <li>📊 Monitor doorbell activity and statistics</li>
-                <li>🔔 Video call with visitors at your door</li>
-              </ul>
-            </div>
-
-            <!-- Device Info -->
             <div class="info-box">
-              <h3>📡 Your Device Configuration</h3>
+              <h3 style="margin: 0 0 8px 0;">📡 Your Device Configuration</h3>
               <p><strong>WiFi Network:</strong> ${ssid}</p>
-              <p style="margin-top: 8px;">
-                Your doorbell QR code has been generated and is ready to use. 
-                Visitors can scan it to connect and record videos.
-              </p>
             </div>
-
-            <!-- Support -->
-            <p style="margin-top: 24px;">
-              Need help getting started? Our support team is here to assist you with setup, 
-              configuration, or any questions you may have.
-            </p>
           </div>
 
-          <!-- Footer -->
-          <div class="footer">
-            <p>
-              This is an automated message from your DoorBell system.<br>
-              If you did not request this account, please contact support immediately.
-            </p>
-            <p style="margin-top: 12px;">
-              <a href="${dashboardUrl}/support">Support</a> | 
-              <a href="${dashboardUrl}/privacy">Privacy Policy</a>
-            </p>
+          <div style="text-align: center; padding-top: 24px; border-top: 2px solid #f0f0f0; color: #666; font-size: 14px;">
+            <p>This is an automated message from your DoorBell system.</p>
           </div>
         </div>
       </body>
@@ -1782,113 +1854,32 @@ async function sendOwnerWelcomeEmail(ownerData) {
       to: owner_email,
       subject: '🎉 Welcome to DoorBell - Your Account is Ready!',
       html: emailHtml,
-      // Optional: Plain text version
       text: `
-        Welcome to DoorBell, ${owner_name}!
-        
-        Your account has been successfully created.
-        
-        Login Credentials:
-        - Owner ID: ${owner_id}
-        - Email: ${owner_email}
-        - Password: ${password}
-        
-        Access your dashboard at: ${dashboardUrl}/login
-        
-        Important: Please change your password after your first login.
-        
-        Your WiFi Network: ${ssid}
-        
-        If you have any questions, please contact our support team.
+Welcome to DoorBell, ${owner_name}!
+
+Your account has been successfully created.
+
+Login Credentials:
+- Owner ID: ${owner_id}
+- Email: ${owner_email}
+- Password: ${password}
+
+Access your dashboard at: ${dashboardUrl}/login
+
+Important: Please change your password after your first login.
+
+Your WiFi Network: ${ssid}
       `
     });
 
-    console.log('✅ Welcome email sent successfully to:', owner_email);
+    console.log('✅ Welcome email sent successfully');
     return { success: true };
 
   } catch (error) {
-    console.error('❌ Failed to send welcome email:', error);
+    console.error('❌ Email send error:', error);
     return { success: false, error: error.message };
   }
 }
-
-// Update your /api/owner/create endpoint (add after owner creation):
-
-app.post('/api/owner/create', authMiddleware, async (req, res) => {
-  try {
-    console.log('📥 CREATE OWNER REQUEST RECEIVED');
-    // ... existing validation code ...
-
-    const insert = `
-      INSERT INTO qr_portal.t_master_owner_details
-      (owner_name, owner_email, owner_phone, ssid, dev_password, accesspoint_url, 
-       google_client_id, google_client_secret)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-      RETURNING owner_id, owner_name, owner_email, ssid, dev_password, 
-                accesspoint_url, password
-    `;
-
-    const { rows } = await pool.query(insert, [
-      owner_name.trim(), 
-      owner_email.trim(), 
-      owner_phone.trim(), 
-      ssid.trim(), 
-      dev_password, 
-      accesspoint_url,
-      google_client_id || null, 
-      google_client_secret || null
-    ]);
-
-    const owner = rows[0];
-    console.log('✅ Owner inserted with ID:', owner.owner_id);
-
-    // Generate QR code (existing code)
-    const recordUrl = `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
-    const qrPath = path.join(qrDir, `${owner.owner_id}-single.png`);
-    await QRCode.toFile(qrPath, recordUrl, { width: 400 });
-
-    // 📧 SEND WELCOME EMAIL
-    const emailResult = await sendOwnerWelcomeEmail({
-      owner_email: owner.owner_email,
-      owner_name: owner.owner_name,
-      owner_id: owner.owner_id,
-      password: owner.password, // This comes from database
-      ssid: owner.ssid
-    });
-
-    if (!emailResult.success) {
-      console.warn('⚠️ Email sending failed but continuing:', emailResult.error);
-    }
-
-    const response = {
-      success: true,
-      message: 'Owner created successfully',
-      owner: {
-        owner_id: owner.owner_id,
-        owner_name: owner.owner_name,
-        owner_email: owner.owner_email,
-        ssid: owner.ssid,
-        dev_password: owner.dev_password,
-        accesspoint_url: owner.accesspoint_url,
-        google_client_id: google_client_id || null,
-        google_client_secret: google_client_secret || null
-      },
-      qr_image: `/qrcodes/${owner.owner_id}-single.png`,
-      recordUrl,
-      emailSent: emailResult.success // Include email status in response
-    };
-
-    console.log('🎉 SUCCESS! Sending response...');
-    res.json(response);
-
-  } catch (err) {
-    console.error('❌ CRITICAL ERROR IN OWNER CREATE:', err);
-    res.status(500).json({ 
-      message: 'Failed to create owner',
-      error: err.message
-    });
-  }
-});
 
 
 // ---------------------------------------------------------------
