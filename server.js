@@ -1679,24 +1679,27 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
 // server.js - Add this endpoint
 // Replace the existing endpoint with this:
 app.get('/api/config/google-oauth', (req, res) => {
-  const androidClientId = process.env.GOOGLE_ANDROID_CLIENT_ID || process.env.GOOGLE_MOBILE_CLIENT_ID;
+  // ✅ Use Web Client ID consistently
+  const webClientId = process.env.WEB_GOOGLE_CLIENT_ID;
   
   console.log('📱 OAuth config requested');
-  console.log('🔑 Android Client ID available:', !!androidClientId);
+  console.log('🔑 Web Client ID available:', !!webClientId);
+  console.log('🔑 Client ID (first 30 chars):', webClientId?.substring(0, 30) + '...');
   
-  if (!androidClientId) {
+  if (!webClientId) {
     return res.status(500).json({ 
       success: false,
-      message: 'Android Client ID not configured in environment variables' 
+      message: 'WEB_GOOGLE_CLIENT_ID not configured in environment variables' 
     });
   }
   
   res.json({
     success: true,
-    androidClientId: androidClientId,
+    androidClientId: webClientId, // Keep property name for backward compatibility
+    webClientId: webClientId,
+    redirectUri: 'https://doorbell-qckk.onrender.com/api/oauth/mobile-redirect'
   });
 });
-
 app.get('/api/owner/:ownerId/google-auth-url', async (req, res) => {
   try {
     const { ownerId } = req.params;
@@ -2268,12 +2271,13 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
       
       console.log('🔄 Exchanging code for tokens for owner:', ownerId);
       
-      // Get Web client credentials from env
-      const webClientId = process.env.WEB_GOOGLE_CLIENT_ID || process.env.GOOGLE_ANDROID_CLIENT_ID;
-      const webClientSecret = process.env.WEB_GOOGLE_SECRET_KEY || process.env.GOOGLE_WEB_CLIENT_SECRET;
+      // ✅ Use Web Client credentials from env
+      const webClientId = process.env.WEB_GOOGLE_CLIENT_ID;
+      const webClientSecret = process.env.WEB_GOOGLE_SECRET_KEY;
       const redirectUri = `${process.env.BACKEND_URL}/api/oauth/mobile-redirect`;
       
       console.log('🔑 Using Web Client:', webClientId?.substring(0, 30) + '...');
+      console.log('🔗 Redirect URI:', redirectUri);
       
       // Exchange code for tokens using Web client
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -2470,7 +2474,6 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
     </html>
   `);
 });
-
 /* ----------------------- FETCH OWNER DETAILS ----------------------- */
 
 app.get('/api/owner/:ownerId', async (req, res) => {
