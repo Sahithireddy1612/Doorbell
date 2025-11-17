@@ -1517,25 +1517,17 @@ app.post('/upload/google-drive', upload.single('video'), async (req, res) => {
 // 4. Ring Doorbell (already exists, just confirming)
 // ================================================
 app.post('/api/ring', (req, res) => {
-  const key = req.headers['x-api-key'];
-  if (key !== 'doorbell123') {
-    return res.status(403).json({ success: false, message: 'Invalid key' });
-  }
+  const token = req.headers['x-api-key'];
+  if (token !== API_KEY) return res.status(403).json({ success: false });
 
-  if (!mqttConnected) {
-    return res.status(503).json({ success: false, message: 'MQTT disconnected' });
-  }
+  if (!mqttConnected) return res.status(503).json({ success: false, message: 'MQTT not connected' });
 
-  // THIS IS THE ONLY CHANGE NEEDED!
-  mqttClient.publish('doorbell/trigger', 'RING', { qos: 2 }, (err) => {
-    if (err) {
-      console.error('MQTT publish failed:', err);
-      return res.status(500).json({ success: false });
-    }
-    console.log('DING DONG! Bell command sent');
-    res.json({ success: true, message: 'Doorbell rang!' });
+  mqttClient.publish('doorbell/trigger', 'buzz', { qos: 1 }, (err) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    res.json({ success: true, message: 'Bell rang!' });
   });
 });
+
 // 1️⃣ FIRST: Add this function BEFORE the endpoint (if not already present)
 async function sendOwnerWelcomeEmail(ownerData) {
   console.log('📧 ========== SENDING WELCOME EMAIL ==========');
@@ -1672,87 +1664,156 @@ async function sendOwnerWelcomeEmail(ownerData) {
 }
 
 // 2️⃣ THEN: Replace your /api/owner/create endpoint with this COMPLETE version
-app.post('/api/owner/create', async (req, res) => {
+app.post('/api/owner/create', authMiddleware, async (req, res) => {
   try {
+    console.log('\n🎯 ========== CREATE OWNER REQUEST ==========');
+    
     const { 
-      owner_name, owner_email, owner_phone, ssid, dev_password, 
-      accesspoint_url, google_client_id, google_client_secret 
+      owner_name, 
+      owner_email, 
+      owner_phone, 
+      ssid, 
+      dev_password, 
+      google_client_id, 
+      google_client_secret 
     } = req.body;
 
-    if (!owner_name || !owner_email || !owner_phone || !ssid || !dev_password) {
-      return res.status(400).json({ success: false, message: 'All fields required' });
-    }
-
-    const finalUrl = accesspoint_url || 'https://doorbell-qckk.onrender.com';
-
-    // Insert owner
-    const { rows } = await pool.query(`
-      INSERT INTO qr_portal.t_master_owner_details 
-      (owner_name, owner_email, owner_phone, ssid, dev_password, accesspoint_url, google_client_id, google_client_secret)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING owner_id, owner_name, owner_email, ssid, password
-    `, [owner_name, owner_email, owner_phone, ssid, dev_password, finalUrl, google_client_id || null, google_client_secret || null]);
-
-    const owner = rows[0];
-
-    // Generate QR
-    const recordUrl = `${finalUrl}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
-    const qrPath = `./qrcodes/${owner.owner_id}.png`;
-    await QRCode.toFile(qrPath, recordUrl, { width: 400 });
-
-    // SEND EMAIL WITH QR CODE IMAGE EMBEDDED
-    try {
-      await transporter.sendMail({
-        from: `"DoorBell System" <${process.env.SMTP_USER}>`,
-        to: owner.owner_email,
-        subject: 'Your Smart DoorBell is Ready! (QR + Login)',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 30px; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center;">
-            <h1 style="color: #10b981;">Welcome ${owner_name}!</h1>
-            <p style="font-size: 18px; color: #333;">Your smart doorbell is now active.</p>
-
-            <div style="background: #f0f7ff; padding: 24px; border-radius: 12px; margin: 24px 0; border: 2px dashed #4285f4;">
-              <h3>Scan QR to Ring Your Bell</h3>
-              <img src="https://doorbell-qckk.onrender.com/qrcodes/${owner.owner_id}.png" 
-                   width="280" height="280" style="border-radius: 12px; margin: 16px 0;" />
-              <p>Anyone can scan this QR to ring your doorbell</p>
-            </div>
-
-            <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 20px 0;">
-              <h3>Your Login Details</h3>
-              <p><strong>Email:</strong> ${owner_email}</p>
-              <p><strong>Password:</strong> <code style="background:#e9ecef;padding:6px 10px;border-radius:6px;font-size:18px;">${owner.password}</code></p>
-              <p style="color:#d32f2f; font-weight:bold;">Change password after first login!</p>
-            </div>
-
-            <p style="color:#666; margin-top: 32px;">
-              Your visitors can now ring your bell by scanning the QR code above.<br>
-              Videos will be saved to Google Drive (if connected).
-            </p>
-
-            <hr style="margin: 40px 0; border: 1px solid #eee;">
-            <p style="color:#999; font-size:14px;">DoorBell Smart Security • Made in India</p>
-          </div>
-        `,
-        text: `Welcome ${owner_name}!\n\nLogin:\nEmail: ${owner_email}\nPassword: ${owner.password}\n\nScan QR from app or visit: ${recordUrl}\n\nYour doorbell is active!`
-      });
-
-      console.log('Welcome email with QR sent to:', owner.owner_email);
-
-    } catch (emailErr) {
-      console.log('Email failed (owner still created):', emailErr.message);
-    }
-
-    res.json({
-      success: true,
-      owner: { owner_id: owner.owner_id, owner_name, owner_email },
-      qr_image: `/qrcodes/${owner.owner_id}.png`,  // for mobile app
-      message: "Owner created & email with QR sent!"
+    console.log('📦 Request data:', {
+      owner_name,
+      owner_email,
+      owner_phone,
+      ssid,
+      has_dev_password: !!dev_password
     });
 
+    // ===== VALIDATION =====
+    if (!owner_name?.trim()) {
+      return res.status(400).json({ message: 'Owner name is required' });
+    }
+    if (!owner_email?.trim()) {
+      return res.status(400).json({ message: 'Owner email is required' });
+    }
+    if (!owner_phone?.trim()) {
+      return res.status(400).json({ message: 'Owner phone is required' });
+    }
+    if (!ssid?.trim()) {
+      return res.status(400).json({ message: 'SSID is required' });
+    }
+    if (!dev_password?.trim()) {
+      return res.status(400).json({ message: 'Device password is required' });
+    }
+
+    console.log('✅ Validation passed');
+
+    const accesspoint_url = process.env.QR_ACCESS_URL || 'http://192.168.137.1:5000';
+
+    // ===== DATABASE INSERT =====
+    console.log('💾 Inserting into database...');
+
+    const insert = `
+      INSERT INTO qr_portal.t_master_owner_details
+      (owner_name, owner_email, owner_phone, ssid, dev_password, accesspoint_url, 
+       google_client_id, google_client_secret)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING owner_id, owner_name, owner_email, owner_phone, ssid, dev_password, 
+                accesspoint_url, password, google_client_id, google_client_secret
+    `;
+
+    const { rows } = await pool.query(insert, [
+      owner_name.trim(), 
+      owner_email.trim(), 
+      owner_phone.trim(), 
+      ssid.trim(), 
+      dev_password, 
+      accesspoint_url,
+      google_client_id?.trim() || null, 
+      google_client_secret?.trim() || null
+    ]);
+
+    if (!rows.length) {
+      return res.status(500).json({ message: 'Database insert failed' });
+    }
+
+    const owner = rows[0];
+    console.log('✅ Owner created:', {
+      owner_id: owner.owner_id,
+      owner_email: owner.owner_email,
+      has_auto_password: !!owner.password
+    });
+
+    // ===== GENERATE QR CODE =====
+    console.log('🎨 Generating QR code...');
+    const recordUrl = `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
+    const qrPath = path.join(qrDir, `${owner.owner_id}-single.png`);
+    await QRCode.toFile(qrPath, recordUrl, { width: 400 });
+    console.log('✅ QR code saved:', qrPath);
+
+    // ===== ⚡ SEND WELCOME EMAIL (THIS IS THE CRITICAL PART!) =====
+    console.log('\n📧 ========== EMAIL SECTION START ==========');
+    let emailResult = { success: false, error: 'Not attempted' };
+    
+    try {
+      // ✅ MAKE SURE password exists before sending email
+      if (!owner.password) {
+        console.warn('⚠️ No auto-generated password found, skipping email');
+        emailResult = { success: false, error: 'No password generated' };
+      } else {
+        console.log('📧 Calling sendOwnerWelcomeEmail...');
+        
+        emailResult = await sendOwnerWelcomeEmail({
+          owner_email: owner.owner_email,
+          owner_name: owner.owner_name,
+          owner_id: owner.owner_id,
+          password: owner.password,
+          ssid: owner.ssid
+        });
+
+        if (emailResult.success) {
+          console.log('✅ Email sent successfully to:', owner.owner_email);
+        } else {
+          console.error('⚠️ Email send failed:', emailResult.error);
+        }
+      }
+    } catch (emailError) {
+      console.error('❌ Email exception:', emailError.message);
+      emailResult = { success: false, error: emailError.message };
+    }
+    console.log('📧 ========== EMAIL SECTION END ==========\n');
+
+    // ===== RESPONSE =====
+    const response = {
+      success: true,
+      message: 'Owner created successfully',
+      owner: {
+        owner_id: owner.owner_id,
+        owner_name: owner.owner_name,
+        owner_email: owner.owner_email,
+        ssid: owner.ssid,
+        dev_password: owner.dev_password,
+        accesspoint_url: owner.accesspoint_url,
+        google_client_id: owner.google_client_id || null,
+        google_client_secret: owner.google_client_secret || null
+      },
+      qr_image: `/qrcodes/${owner.owner_id}-single.png`,
+      recordUrl,
+      // ✅ Include email status in response
+      emailSent: emailResult.success,
+      emailError: !emailResult.success ? emailResult.error : null
+    };
+
+    console.log('🎉 Response prepared');
+    console.log('📧 Email sent:', emailResult.success);
+    console.log('🎯 ========================================\n');
+    
+    res.json(response);
+
   } catch (err) {
-    console.error('Error:', err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error('❌ CRITICAL ERROR:', err.message);
+    console.error('❌ Stack:', err.stack);
+    res.status(500).json({ 
+      message: 'Failed to create owner',
+      error: err.message
+    });
   }
 });
 
