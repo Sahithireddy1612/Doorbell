@@ -1550,7 +1550,8 @@ console.log('SMTP_PASS exists:', !!process.env.SMTP_PASS);
 console.log('SMTP_PASS length:', process.env.SMTP_PASS?.length || 0);
 console.log('📧 ========================================');
 
-// Test the transporter on startup
+// 2. TEST SMTP CONNECTION ON STARTUP
+// Add this after transporter setup
 transporter.verify(function (error, success) {
   if (error) {
     console.error('❌ SMTP CONNECTION FAILED:', error);
@@ -1559,14 +1560,15 @@ transporter.verify(function (error, success) {
   }
 });
 
-// 2️⃣ Add a simple test endpoint
+// 3. CREATE A TEST EMAIL ENDPOINT
+// Add this to server.js to test email independently
 app.get('/api/test/quick-email', async (req, res) => {
   try {
     console.log('📧 Quick email test starting...');
     
     const info = await transporter.sendMail({
       from: process.env.SMTP_USER,
-      to: 'sahithireddy.1612@gmail.com', // Your test email
+      to: 'your-test-email@gmail.com', // Replace with your email
       subject: 'Test from DoorBell',
       text: 'If you receive this, email is working!',
       html: '<h1>✅ Email Working!</h1><p>Time: ' + new Date().toISOString() + '</p>'
@@ -1580,7 +1582,9 @@ app.get('/api/test/quick-email', async (req, res) => {
   }
 });
 
-// 3️⃣ UPDATED sendOwnerWelcomeEmail function with extensive logging
+// 4. CRITICAL FIX: Your sendOwnerWelcomeEmail function is defined but may not be called!
+// Make sure it's placed BEFORE the /api/owner/create endpoint in server.js
+
 async function sendOwnerWelcomeEmail(ownerData) {
   console.log('');
   console.log('📧 ============================================');
@@ -1599,7 +1603,7 @@ async function sendOwnerWelcomeEmail(ownerData) {
       ssid
     });
 
-    // Validate
+    // Validate inputs
     if (!owner_email) throw new Error('owner_email is required');
     if (!owner_name) throw new Error('owner_name is required');
     if (!password) throw new Error('password is required');
@@ -1648,7 +1652,7 @@ async function sendOwnerWelcomeEmail(ownerData) {
             <p>Your DoorBell owner account has been created! Use these credentials to login to the Owner Dashboard in the mobile app.</p>
             
             <div class="credential-box">
-              <h3 style="margin: 0 0 16px 0;">🔐 Your Login Credentials</h3>
+              <h3 style="margin: 0 0 16px 0;">🔑 Your Login Credentials</h3>
               
               <div class="credential-item">
                 <div class="label">Owner ID</div>
@@ -1743,7 +1747,7 @@ async function sendOwnerWelcomeEmail(ownerData) {
   }
 }
 
-// 4️⃣ UPDATED /api/owner/create with better error handling
+// 5. UPDATED /api/owner/create ENDPOINT
 app.post('/api/owner/create', authMiddleware, async (req, res) => {
   try {
     console.log('');
