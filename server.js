@@ -29,22 +29,22 @@ const mqttClient = mqtt.connect('mqtt://broker.hivemq.com');
 let mqttConnected = false;
 
 mqttClient.on('connect', () => {
-  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ MQTT connected to broker.hivemq.com');
+  console.log('Ã¢Å“â€¦ MQTT connected to broker.hivemq.com');
   mqttConnected = true;
 });
 
 mqttClient.on('error', (err) => {
-  console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ MQTT connection error:', err);
+  console.error('Ã¢ÂÅ’ MQTT connection error:', err);
   mqttConnected = false;
 });
 
 mqttClient.on('close', () => {
-  console.log('ÃƒÂ¢Ã…Â¡ ÃƒÂ¯Ã‚Â¸Ã‚Â MQTT connection closed');
+  console.log('Ã¢Å¡ Ã¯Â¸Â MQTT connection closed');
   mqttConnected = false;
 });
 
 mqttClient.on('reconnect', () => {
-  console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ MQTT reconnecting...');
+  console.log('Ã°Å¸â€â€ž MQTT reconnecting...');
 });
 
 
@@ -107,7 +107,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
 //       return res.status(401).json({ message: 'Invalid credentials' });
 //     }
 
-//     // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Return role in lowercase for consistency
+//     // Ã¢Å“â€¦ Return role in lowercase for consistency
 //     const payload = {
 //       id: agent.agent_id,
 //       email: agent.agent_email,
@@ -139,39 +139,39 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
     
 //     const { rows } = await pool.query(q, [email]);
     
-//     console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Database query result:', rows);
+//     console.log('Ã¢Å“â€¦ Database query result:', rows);
     
 //     if (!rows.length) {
-//       console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ No owner found with email:', email);
+//       console.log('Ã¢ÂÅ’ No owner found with email:', email);
 //       return res.status(401).json({ message: 'Invalid credentials' });
 //     }
 
 //     const owner = rows[0];
     
-//     console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Owner found:', {
+//     console.log('Ã°Å¸â€Â Owner found:', {
 //       owner_id: owner.owner_id,
 //       owner_name: owner.owner_name,
 //       owner_email: owner.owner_email
 //     });
     
 //     if (password !== owner.password) {
-//       console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Password mismatch for:', email);
+//       console.log('Ã¢ÂÅ’ Password mismatch for:', email);
 //       return res.status(401).json({ message: 'Invalid credentials' });
 //     }
 
-//     // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ CRITICAL FIX: Use owner_id as the id field in JWT
+//     // Ã¢Å“â€¦ CRITICAL FIX: Use owner_id as the id field in JWT
 //     const payload = {
-//       id: owner.owner_id,           // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ This must match the database column
+//       id: owner.owner_id,           // Ã¢Å“â€¦ This must match the database column
 //       email: owner.owner_email,
 //       name: owner.owner_name,
 //       role: 'owner',
 //     };
 
-//     console.log('ÃƒÂ°Ã…Â¸Ã…Â½Ã‚Â« JWT Payload:', payload);
+//     console.log('Ã°Å¸Å½Â« JWT Payload:', payload);
 
 //     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
     
-//     console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Login successful for:', email, 'with owner_id:', owner.owner_id);
+//     console.log('Ã¢Å“â€¦ Login successful for:', email, 'with owner_id:', owner.owner_id);
     
 //     return res.json({ 
 //       token, 
@@ -179,7 +179,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
 //     });
     
 //   } catch (err) {
-//     console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owner login error:', err.stack);
+//     console.error('Ã¢ÂÅ’ Owner login error:', err.stack);
 //     return res.status(500).json({ message: 'Internal server error' });
 //   }
 // });
@@ -194,7 +194,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Unified login attempt:', { 
+    console.log('Ã°Å¸â€Â Unified login attempt:', { 
       email, 
       password: '****', 
       rawEmail: JSON.stringify(email), 
@@ -202,13 +202,13 @@ app.post('/api/auth/login', async (req, res) => {
     });
 
     if (!email || !password) {
-      console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Missing email or password');
+      console.log('Ã¢ÂÅ’ Missing email or password');
       return res.status(400).json({ message: 'Email and password required' });
     }
 
     // Normalize email for query
     const normalizedEmail = email.trim().toLowerCase();
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Normalized email for query:', normalizedEmail);
+    console.log('Ã°Å¸â€Â Normalized email for query:', normalizedEmail);
 
     // Check Agent
     const agentQuery = `
@@ -217,7 +217,7 @@ app.post('/api/auth/login', async (req, res) => {
       WHERE LOWER(agent_email) = $1
     `;
     const { rows: agentRows } = await pool.query(agentQuery, [normalizedEmail]);
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Agent query result:', { found: agentRows.length > 0, email: normalizedEmail });
+    console.log('Ã°Å¸â€Â Agent query result:', { found: agentRows.length > 0, email: normalizedEmail });
 
     // Check Owner
     const ownerQuery = `
@@ -226,17 +226,17 @@ app.post('/api/auth/login', async (req, res) => {
       WHERE LOWER(owner_email) = $1
     `;
     const { rows: ownerRows } = await pool.query(ownerQuery, [normalizedEmail]);
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Owner query result:', { found: ownerRows.length > 0, email: normalizedEmail });
+    console.log('Ã°Å¸â€Â Owner query result:', { found: ownerRows.length > 0, email: normalizedEmail });
 
     // Warn if email exists in both tables
     if (agentRows.length > 0 && ownerRows.length > 0) {
-      console.warn('ÃƒÂ¢Ã…Â¡ ÃƒÂ¯Ã‚Â¸Ã‚Â Duplicate email found in both agent and owner tables:', normalizedEmail);
+      console.warn('Ã¢Å¡ Ã¯Â¸Â Duplicate email found in both agent and owner tables:', normalizedEmail);
     }
 
     // Try Agent authentication
     if (agentRows.length > 0) {
       const agent = agentRows[0];
-      console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Agent found:', { agent_id: agent.agent_id, agent_email: agent.agent_email });
+      console.log('Ã°Å¸â€Â Agent found:', { agent_id: agent.agent_id, agent_email: agent.agent_email });
       if (password === agent.password) {
         const payload = {
           id: agent.agent_id,
@@ -245,14 +245,14 @@ app.post('/api/auth/login', async (req, res) => {
           role: 'agent',
         };
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Agent login successful:', email);
+        console.log('Ã¢Å“â€¦ Agent login successful:', email);
         return res.json({ 
           token, 
           user: payload,
           message: 'Agent login successful' 
         });
       } else {
-        console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Invalid password for agent:', email);
+        console.log('Ã¢ÂÅ’ Invalid password for agent:', email);
         // Continue to owner check
       }
     }
@@ -260,12 +260,12 @@ app.post('/api/auth/login', async (req, res) => {
     // Try Owner authentication
     if (ownerRows.length > 0) {
       const owner = ownerRows[0];
-      console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Owner found:', { 
+      console.log('Ã°Å¸â€Â Owner found:', { 
         owner_id: owner.owner_id, 
         owner_email: owner.owner_email, 
         stored_password: '****' 
       });
-      console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Password comparison:', { 
+      console.log('Ã°Å¸â€Â Password comparison:', { 
         provided: '****', 
         stored: '****', 
         matches: password === owner.password 
@@ -278,23 +278,23 @@ app.post('/api/auth/login', async (req, res) => {
           role: 'owner',
         };
         const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
-        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Owner login successful:', email);
+        console.log('Ã¢Å“â€¦ Owner login successful:', email);
         return res.json({ 
           token, 
           user: payload,
           message: 'Owner login successful' 
         });
       } else {
-        console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Invalid password for owner:', email);
+        console.log('Ã¢ÂÅ’ Invalid password for owner:', email);
       }
     }
 
     // No successful authentication
-    console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ No valid credentials found for email:', normalizedEmail);
+    console.log('Ã¢ÂÅ’ No valid credentials found for email:', normalizedEmail);
     return res.status(401).json({ message: 'Invalid email or password' });
 
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Unified login error:', err.message, err.stack);
+    console.error('Ã¢ÂÅ’ Unified login error:', err.message, err.stack);
     return res.status(500).json({ 
       message: 'Internal server error',
       error: err.message 
@@ -305,24 +305,24 @@ app.post('/api/auth/login', async (req, res) => {
 const authMiddleware = (req, res, next) => {
   const header = req.headers.authorization;
   
-  console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Auth middleware - Authorization header:', header ? 'Present' : 'Missing');
+  console.log('Ã°Å¸â€Â Auth middleware - Authorization header:', header ? 'Present' : 'Missing');
   
   if (!header) {
-    console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ No authorization header');
+    console.log('Ã¢ÂÅ’ No authorization header');
     return res.status(401).json({ message: 'No token' });
   }
   
   const [type, token] = header.split(' ');
   
   if (type !== 'Bearer') {
-    console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Invalid token type:', type);
+    console.log('Ã¢ÂÅ’ Invalid token type:', type);
     return res.status(401).json({ message: 'Invalid token type' });
   }
   
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     
-    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Token decoded successfully:', {
+    console.log('Ã¢Å“â€¦ Token decoded successfully:', {
       id: decoded.id,
       email: decoded.email,
       role: decoded.role,
@@ -332,7 +332,7 @@ const authMiddleware = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Token verification failed:', err.message);
+    console.error('Ã¢ÂÅ’ Token verification failed:', err.message);
     return res.status(401).json({ message: 'Invalid token' });
   }
 };
@@ -397,7 +397,7 @@ app.get('/api/agent/owners-with-stats', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ FIXED: Removed updated_at
+    // Ã¢Å“â€¦ FIXED: Removed updated_at
     const ownersQuery = `
       SELECT 
         owner_id,
@@ -444,7 +444,7 @@ app.get('/api/agent/owners-with-stats', authMiddleware, async (req, res) => {
         : null,
     }));
 
-    console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Fetched ${owners.length} owners with statistics`);
+    console.log(`Ã¢Å“â€¦ Fetched ${owners.length} owners with statistics`);
     
     return res.json({
       success: true,
@@ -459,7 +459,7 @@ app.get('/api/agent/owners-with-stats', authMiddleware, async (req, res) => {
       owners: ownersWithMetadata,
     });
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owners with stats fetch error:', err);
+    console.error('Ã¢ÂÅ’ Owners with stats fetch error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to fetch owners with statistics',
@@ -486,7 +486,7 @@ app.get('/api/agent/owners/search', authMiddleware, async (req, res) => {
 
     const searchTerm = `%${q}%`;
     
-    // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ FIXED: Removed updated_at
+    // Ã¢Å“â€¦ FIXED: Removed updated_at
     const query = `
       SELECT 
         owner_id,
@@ -523,7 +523,7 @@ app.get('/api/agent/owners/search', authMiddleware, async (req, res) => {
         : null,
     }));
 
-    console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Search "${q}" returned ${rows.length} results`);
+    console.log(`Ã¢Å“â€¦ Search "${q}" returned ${rows.length} results`);
     
     return res.json({
       success: true,
@@ -532,7 +532,7 @@ app.get('/api/agent/owners/search', authMiddleware, async (req, res) => {
       owners: ownersWithMetadata,
     });
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owner search error:', err);
+    console.error('Ã¢ÂÅ’ Owner search error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to search owners',
@@ -605,7 +605,7 @@ app.put('/api/agent/owner/:ownerId', authMiddleware, async (req, res) => {
       });
     }
 
-    // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ REMOVED: updated_at = NOW() since column doesn't exist
+    // Ã¢Å“â€¦ REMOVED: updated_at = NOW() since column doesn't exist
     values.push(ownerId);
 
     const query = `
@@ -624,7 +624,7 @@ app.put('/api/agent/owner/:ownerId', authMiddleware, async (req, res) => {
       });
     }
 
-    console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Updated owner ${ownerId}`);
+    console.log(`Ã¢Å“â€¦ Updated owner ${ownerId}`);
 
     return res.json({
       success: true,
@@ -632,7 +632,7 @@ app.put('/api/agent/owner/:ownerId', authMiddleware, async (req, res) => {
       owner: rows[0],
     });
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owner update error:', err);
+    console.error('Ã¢ÂÅ’ Owner update error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to update owner',
@@ -665,7 +665,7 @@ app.delete('/api/agent/owner/:ownerId', authMiddleware, async (req, res) => {
       });
     }
 
-    console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Deleted owner ${ownerId}: ${rows[0].owner_name}`);
+    console.log(`Ã¢Å“â€¦ Deleted owner ${ownerId}: ${rows[0].owner_name}`);
 
     return res.json({
       success: true,
@@ -673,7 +673,7 @@ app.delete('/api/agent/owner/:ownerId', authMiddleware, async (req, res) => {
       deleted_owner: rows[0],
     });
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owner delete error:', err);
+    console.error('Ã¢ÂÅ’ Owner delete error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to delete owner',
@@ -688,7 +688,7 @@ app.get('/api/agent/owners', authMiddleware, async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
-    // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ FIXED: Removed updated_at from SELECT since it doesn't exist in your table
+    // Ã¢Å“â€¦ FIXED: Removed updated_at from SELECT since it doesn't exist in your table
     const query = `
       SELECT 
         owner_id,
@@ -711,7 +711,7 @@ app.get('/api/agent/owners', authMiddleware, async (req, res) => {
     
     const { rows } = await pool.query(query);
     
-    console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Fetched ${rows.length} owners with complete details`);
+    console.log(`Ã¢Å“â€¦ Fetched ${rows.length} owners with complete details`);
     
     // Add computed fields for each owner
     const ownersWithMetadata = rows.map(owner => ({
@@ -732,7 +732,7 @@ app.get('/api/agent/owners', authMiddleware, async (req, res) => {
       owners: ownersWithMetadata,
     });
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owners fetch error:', err);
+    console.error('Ã¢ÂÅ’ Owners fetch error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to fetch owners',
@@ -848,17 +848,17 @@ app.get('/api/profile', authMiddleware, async (req, res) => {
 
 app.get('/api/owner/dashboard-stats', authMiddleware, async (req, res) => {
   try {
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã…  Dashboard request from user:', req.user);
+    console.log('Ã°Å¸â€œÅ  Dashboard request from user:', req.user);
     
     // Check if user is an owner
     if (req.user.role !== 'owner') {
-      console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Access denied - user is not owner, role:', req.user.role);
+      console.log('Ã¢ÂÅ’ Access denied - user is not owner, role:', req.user.role);
       return res.status(403).json({ message: 'Access denied' });
     }
 
     const ownerId = req.user.id;
     
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Looking for owner with ID:', ownerId);
+    console.log('Ã°Å¸â€Â Looking for owner with ID:', ownerId);
 
     // Get owner details
     const ownerQuery = `
@@ -870,10 +870,10 @@ app.get('/api/owner/dashboard-stats', authMiddleware, async (req, res) => {
     
     const { rows: ownerRows } = await pool.query(ownerQuery, [ownerId]);
     
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Database query result:', ownerRows);
+    console.log('Ã°Å¸â€Â Database query result:', ownerRows);
     
     if (!ownerRows.length) {
-      console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Owner not found in database with ID:', ownerId);
+      console.log('Ã¢ÂÅ’ Owner not found in database with ID:', ownerId);
       return res.status(404).json({ 
         message: 'Owner not found',
         debug: { searchedId: ownerId }
@@ -882,7 +882,7 @@ app.get('/api/owner/dashboard-stats', authMiddleware, async (req, res) => {
 
     const owner = ownerRows[0];
     
-    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Owner found:', owner.owner_name);
+    console.log('Ã¢Å“â€¦ Owner found:', owner.owner_name);
 
     // Calculate stats for this owner
     const stats = {
@@ -916,7 +916,7 @@ app.get('/api/owner/dashboard-stats', authMiddleware, async (req, res) => {
         : 'Connect Google Drive to automatically save your doorbell videos.'
     }`;
 
-    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Sending dashboard data for:', owner.owner_name);
+    console.log('Ã¢Å“â€¦ Sending dashboard data for:', owner.owner_name);
 
     return res.json({
       success: true,
@@ -936,7 +936,7 @@ app.get('/api/owner/dashboard-stats', authMiddleware, async (req, res) => {
       activities,
     });
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owner dashboard stats error:', err);
+    console.error('Ã¢ÂÅ’ Owner dashboard stats error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to fetch dashboard data',
@@ -949,7 +949,7 @@ app.get('/api/owner/dashboard-stats', authMiddleware, async (req, res) => {
 
 app.get('/api/debug/check-owner', authMiddleware, async (req, res) => {
   try {
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â Debug - JWT decoded user:', req.user);
+    console.log('Ã°Å¸â€Â Debug - JWT decoded user:', req.user);
     
     const ownerId = req.user.id;
     
@@ -1044,7 +1044,7 @@ app.get('/api/owner/profile', authMiddleware, async (req, res) => {
       data: profileData 
     });
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Owner profile fetch error:', err);
+    console.error('Ã¢ÂÅ’ Owner profile fetch error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Internal server error',
@@ -1065,7 +1065,7 @@ app.get('/api/owner/drive-files', authMiddleware, async (req, res) => {
     }
 
     const ownerId = req.user.id;
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â Fetching Google Drive files for owner:', ownerId);
+    console.log('Ã°Å¸â€œÂ Fetching Google Drive files for owner:', ownerId);
 
     // Get owner's Google credentials
     const { rows } = await pool.query(
@@ -1109,7 +1109,7 @@ app.get('/api/owner/drive-files', authMiddleware, async (req, res) => {
 
     // Refresh access token if expired
     if (oauth2Client.isTokenExpiring()) {
-      console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ Refreshing expired Google access token...');
+      console.log('Ã°Å¸â€â€ž Refreshing expired Google access token...');
       const { credentials } = await oauth2Client.refreshAccessToken();
       
       // Update tokens in database
@@ -1121,7 +1121,7 @@ app.get('/api/owner/drive-files', authMiddleware, async (req, res) => {
       );
       
       oauth2Client.setCredentials(credentials);
-      console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Token refreshed successfully');
+      console.log('Ã¢Å“â€¦ Token refreshed successfully');
     }
 
     // Initialize Google Drive API
@@ -1137,7 +1137,7 @@ app.get('/api/owner/drive-files', authMiddleware, async (req, res) => {
 
     const files = response.data.files;
     
-    console.log(`ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Found ${files.length} files in Google Drive`);
+    console.log(`Ã¢Å“â€¦ Found ${files.length} files in Google Drive`);
 
     // Format file data
     const formattedFiles = files.map(file => ({
@@ -1175,7 +1175,7 @@ app.get('/api/owner/drive-files', authMiddleware, async (req, res) => {
         userEmail: aboutResponse.data.user?.emailAddress
       };
     } catch (quotaErr) {
-      console.warn('ÃƒÂ¢Ã…Â¡ ÃƒÂ¯Ã‚Â¸Ã‚Â Could not fetch storage quota:', quotaErr.message);
+      console.warn('Ã¢Å¡ Ã¯Â¸Â Could not fetch storage quota:', quotaErr.message);
     }
 
     return res.json({
@@ -1188,7 +1188,7 @@ app.get('/api/owner/drive-files', authMiddleware, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Google Drive files fetch error:', err);
+    console.error('Ã¢ÂÅ’ Google Drive files fetch error:', err);
     
     // Handle specific Google API errors
     if (err.code === 401 || err.message?.includes('invalid_grant')) {
@@ -1221,7 +1221,7 @@ app.get('/api/owner/drive-files/:fileId', authMiddleware, async (req, res) => {
     const ownerId = req.user.id;
     const { fileId } = req.params;
 
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã¢â‚¬Å¾ Fetching specific file:', fileId);
+    console.log('Ã°Å¸â€œâ€ž Fetching specific file:', fileId);
 
     // Get owner's Google credentials
     const { rows } = await pool.query(
@@ -1302,7 +1302,7 @@ app.get('/api/owner/drive-files/:fileId', authMiddleware, async (req, res) => {
     });
 
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Specific file fetch error:', err);
+    console.error('Ã¢ÂÅ’ Specific file fetch error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to fetch file details',
@@ -1324,7 +1324,7 @@ app.delete('/api/owner/drive-files/:fileId', authMiddleware, async (req, res) =>
     const ownerId = req.user.id;
     const { fileId } = req.params;
 
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬â€Ã¢â‚¬ËœÃƒÂ¯Ã‚Â¸Ã‚Â Deleting file:', fileId);
+    console.log('Ã°Å¸â€”â€˜Ã¯Â¸Â Deleting file:', fileId);
 
     // Get owner's Google credentials
     const { rows } = await pool.query(
@@ -1380,7 +1380,7 @@ app.delete('/api/owner/drive-files/:fileId', authMiddleware, async (req, res) =>
       fileId: fileId
     });
 
-    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ File deleted successfully:', fileId);
+    console.log('Ã¢Å“â€¦ File deleted successfully:', fileId);
 
     return res.json({
       success: true,
@@ -1389,7 +1389,7 @@ app.delete('/api/owner/drive-files/:fileId', authMiddleware, async (req, res) =>
     });
 
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ File delete error:', err);
+    console.error('Ã¢ÂÅ’ File delete error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to delete file',
@@ -1411,6 +1411,122 @@ function formatBytes(bytes, decimals = 2) {
 
   return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
 }
+
+
+// ================================================
+// 1. Save Google Tokens (called from Mobile App)
+// ================================================
+app.post('/api/owner/:ownerId/save-google-tokens', async (req, res) => {
+  const { ownerId } = req.params;
+  const { access_token, refresh_token, expiry_date } = req.body;
+
+  try {
+    await pool.query(`
+      UPDATE qr_portal.t_master_owner_details 
+      SET 
+        google_access_token = $1,
+        google_refresh_token = $2,
+        google_token_expiry = $3
+      WHERE owner_id = $4
+    `, [access_token, refresh_token, expiry_date || null, ownerId]);
+
+    console.log(`Google tokens saved for owner ${ownerId}`);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('Save tokens error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ================================================
+// 2. Get Google Tokens (called from Web App when QR scanned)
+// ================================================
+app.get('/api/owner/:ownerId/google-tokens', async (req, res) => {
+  const { ownerId } = req.params;
+
+  try {
+    const { rows } = await pool.query(`
+      SELECT google_access_token, google_refresh_token, google_token_expiry 
+      FROM qr_portal.t_master_owner_details 
+      WHERE owner_id = $1
+    `, [ownerId]);
+
+    if (!rows.length || !rows[0].google_access_token) {
+      return res.json({ success: false, message: 'Google Drive not connected' });
+    }
+
+    res.json({
+      success: true,
+      access_token: rows[0].google_access_token,
+      refresh_token: rows[0].google_refresh_token
+    });
+  } catch (err) {
+    console.error('Get tokens error:', err);
+    res.status(500).json({ success: false });
+  }
+});
+
+// ================================================
+// 3. Upload Video to Google Drive (proxy via backend)
+// ================================================
+app.post('/upload/google-drive', upload.single('video'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No video' });
+
+  const { ownerId, access_token } = req.body;
+  const filePath = req.file.path;
+
+  try {
+    const oauth2Client = new google.auth.OAuth2();
+    oauth2Client.setCredentials({ access_token });
+
+    const drive = google.drive({ version: 'v3', auth: oauth2Client });
+
+    const fileMetadata = {
+      name: `Doorbell_${ownerId}_${Date.now()}.webm`,
+      parents: ['root'] // Change to specific folder ID if needed
+    };
+
+    const media = {
+      mimeType: 'video/webm',
+      body: fs.createReadStream(filePath)
+    };
+
+    const response = await drive.files.create({
+      resource: fileMetadata,
+      media: media,
+      fields: 'id, name, webViewLink'
+    });
+
+    fs.unlinkSync(filePath); // delete temp file
+
+    console.log(`Video uploaded to Drive: ${response.data.id}`);
+    res.json({
+      success: true,
+      fileId: response.data.id,
+      link: response.data.webViewLink
+    });
+
+  } catch (err) {
+    console.error('Google Drive upload failed:', err);
+    fs.unlinkSync(filePath);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// ================================================
+// 4. Ring Doorbell (already exists, just confirming)
+// ================================================
+app.post('/api/ring', (req, res) => {
+  const token = req.headers['x-api-key'];
+  if (token !== API_KEY) return res.status(403).json({ success: false });
+
+  if (!mqttConnected) return res.status(503).json({ success: false, message: 'MQTT not connected' });
+
+  mqttClient.publish('doorbell/trigger', 'buzz', { qos: 1 }, (err) => {
+    if (err) return res.status(500).json({ success: false, error: err.message });
+    res.json({ success: true, message: 'Bell rang!' });
+  });
+});
 // Then, for role-protected routes, add checks like:
 // if (req.user.role !== 'agent') return res.status(403).json({ message: 'Access denied' });
 
@@ -1463,25 +1579,25 @@ app.get('/api/agent/me', authMiddleware, (req, res) => res.json({ agent: req.age
 app.post('/api/ring', (req, res) => {
   const token = req.headers['x-api-key'];
   if (token !== API_KEY) {
-    console.log('ÃƒÂ¢Ã‚ÂÃ…â€™ Invalid API key');
+    console.log('Ã¢ÂÅ’ Invalid API key');
     return res.status(403).json({ success: false, message: 'Forbidden' });
   }
   
   // Check MQTT connection status
   if (!mqttConnected) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ MQTT not connected, cannot ring bell');
+    console.error('Ã¢ÂÅ’ MQTT not connected, cannot ring bell');
     return res.status(503).json({ 
       success: false, 
       message: 'MQTT broker not connected' 
     });
   }
   
-  console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Publishing ring command to MQTT...');
+  console.log('Ã°Å¸â€â€ Publishing ring command to MQTT...');
   
   // Publish with callback to confirm
   mqttClient.publish('doorbell/trigger', 'buzz', { qos: 1 }, (err) => {
     if (err) {
-      console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ MQTT publish failed:', err);
+      console.error('Ã¢ÂÅ’ MQTT publish failed:', err);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to publish MQTT message',
@@ -1489,7 +1605,7 @@ app.post('/api/ring', (req, res) => {
       });
     }
     
-    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ MQTT message published successfully');
+    console.log('Ã¢Å“â€¦ MQTT message published successfully');
     res.json({ success: true, message: 'Bell ring command sent' });
   });
 });
@@ -1533,70 +1649,23 @@ app.post('/api/ring', (req, res) => {
 // });
 
 // ============================================
-// COMPLETE EMAIL DEBUGGING SOLUTION
-// Add this to your server.js
+// COM// ============================================
+// COMPLETE FIX FOR OWNER CREATION WITH EMAIL
+// Replace your existing /api/owner/create endpoint with this
 // ============================================
 
-// 1ï¸âƒ£ First, verify your transporter is configured correctly
-// Add this IMMEDIATELY after your transporter setup:
-
-console.log('ðŸ“§ ========================================');
-console.log('ðŸ“§ EMAIL CONFIGURATION CHECK');
-console.log('ðŸ“§ ========================================');
-console.log('SMTP_HOST:', process.env.SMTP_HOST);
-console.log('SMTP_PORT:', process.env.SMTP_PORT);
-console.log('SMTP_USER:', process.env.SMTP_USER);
-console.log('SMTP_PASS exists:', !!process.env.SMTP_PASS);
-console.log('SMTP_PASS length:', process.env.SMTP_PASS?.length || 0);
-console.log('ðŸ“§ ========================================');
-
-// Test the transporter on startup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error('âŒ SMTP CONNECTION FAILED:', error);
-  } else {
-    console.log('âœ… SMTP Server is ready to send emails');
-  }
-});
-
-// 2ï¸âƒ£ Add a simple test endpoint
-app.get('/api/test/quick-email', async (req, res) => {
-  try {
-    console.log('ðŸ“§ Quick email test starting...');
-    
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: 'sahithireddy.1612@gmail.com', // Your test email
-      subject: 'Test from DoorBell',
-      text: 'If you receive this, email is working!',
-      html: '<h1>âœ… Email Working!</h1><p>Time: ' + new Date().toISOString() + '</p>'
-    });
-
-    console.log('âœ… Email sent:', info.messageId);
-    res.json({ success: true, messageId: info.messageId });
-  } catch (err) {
-    console.error('âŒ Email failed:', err);
-    res.status(500).json({ error: err.message, code: err.code });
-  }
-});
-
-// 3ï¸âƒ£ UPDATED sendOwnerWelcomeEmail function with extensive logging
+// 1️⃣ FIRST: Add this function BEFORE the endpoint (if not already present)
 async function sendOwnerWelcomeEmail(ownerData) {
-  console.log('');
-  console.log('ðŸ“§ ============================================');
-  console.log('ðŸ“§ SEND OWNER WELCOME EMAIL - START');
-  console.log('ðŸ“§ ============================================');
+  console.log('📧 ========== SENDING WELCOME EMAIL ==========');
   
   try {
     const { owner_email, owner_name, owner_id, password, ssid } = ownerData;
     
-    console.log('ðŸ“§ Input data:', {
-      owner_email,
-      owner_name,
+    console.log('📧 Email Details:', {
+      to: owner_email,
+      name: owner_name,
       owner_id,
-      has_password: !!password,
-      password_length: password?.length || 0,
-      ssid
+      has_password: !!password
     });
 
     // Validate
@@ -1604,21 +1673,9 @@ async function sendOwnerWelcomeEmail(ownerData) {
     if (!owner_name) throw new Error('owner_name is required');
     if (!password) throw new Error('password is required');
 
-    console.log('âœ… Data validation passed');
-
-    // Check SMTP config
-    console.log('ðŸ“§ SMTP Config:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER,
-      has_pass: !!process.env.SMTP_PASS
-    });
-
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      throw new Error('SMTP credentials not configured in .env');
+      throw new Error('SMTP credentials not configured');
     }
-
-    console.log('âœ… SMTP config validated');
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -1639,16 +1696,16 @@ async function sendOwnerWelcomeEmail(ownerData) {
       <body>
         <div class="container">
           <div class="header">
-            <h1 style="color: #1a1a1a; margin: 0;">ðŸ”” Welcome to DoorBell!</h1>
+            <h1 style="color: #1a1a1a; margin: 0;">🔔 Welcome to DoorBell!</h1>
             <p style="color: #666; margin: 8px 0 0 0;">Your Smart Doorbell Account is Ready</p>
           </div>
           
           <div style="padding: 24px 0;">
             <p style="font-size: 18px;">Hello <strong>${owner_name}</strong>,</p>
-            <p>Your DoorBell owner account has been created! Use these credentials to login to the Owner Dashboard in the mobile app.</p>
+            <p>Your DoorBell owner account has been created! Use these credentials to login to the Owner Dashboard.</p>
             
             <div class="credential-box">
-              <h3 style="margin: 0 0 16px 0;">ðŸ” Your Login Credentials</h3>
+              <h3 style="margin: 0 0 16px 0;">🔑 Your Login Credentials</h3>
               
               <div class="credential-item">
                 <div class="label">Owner ID</div>
@@ -1667,11 +1724,11 @@ async function sendOwnerWelcomeEmail(ownerData) {
             </div>
             
             <div class="warning">
-              <strong>âš ï¸ Security Notice:</strong> Please change your password after first login.
+              <strong>⚠️ Security Notice:</strong> Please change your password after first login.
             </div>
             
             <div style="background: #e8f4fd; padding: 20px; margin: 20px 0; border-radius: 8px;">
-              <h3 style="margin: 0 0 12px 0; color: #0d47a1;">ðŸ“± How to Login:</h3>
+              <h3 style="margin: 0 0 12px 0; color: #0d47a1;">📱 How to Login:</h3>
               <ol style="margin: 0; padding-left: 24px;">
                 <li>Open the DoorBell mobile app</li>
                 <li>Tap "Owner Login"</li>
@@ -1681,7 +1738,7 @@ async function sendOwnerWelcomeEmail(ownerData) {
             </div>
             
             <div class="credential-box">
-              <h3 style="margin: 0 0 8px 0;">ðŸ“¡ Device Configuration</h3>
+              <h3 style="margin: 0 0 8px 0;">📡 Device Configuration</h3>
               <p style="margin: 0;"><strong>WiFi Network:</strong> ${ssid}</p>
             </div>
           </div>
@@ -1694,29 +1751,22 @@ async function sendOwnerWelcomeEmail(ownerData) {
       </html>
     `;
 
-    console.log('âœ… HTML email template built');
-    console.log('ðŸ“§ Attempting to send email...');
-    console.log('ðŸ“§ From:', process.env.SMTP_USER);
-    console.log('ðŸ“§ To:', owner_email);
+    console.log('📧 Sending email to:', owner_email);
 
     const mailOptions = {
       from: `"DoorBell System" <${process.env.SMTP_USER}>`,
       to: owner_email,
-      subject: 'ðŸŽ‰ Welcome to DoorBell - Your Account is Ready!',
+      subject: '🎉 Welcome to DoorBell - Your Account is Ready!',
       html: emailHtml,
       text: `Welcome to DoorBell, ${owner_name}!\n\nYour Login Credentials:\n- Owner ID: ${owner_id}\n- Email: ${owner_email}\n- Password: ${password}\n\nLogin via the DoorBell mobile app.\n\nYour WiFi: ${ssid}`
     };
 
-    console.log('ðŸ“§ Calling transporter.sendMail()...');
-    
     const info = await transporter.sendMail(mailOptions);
 
-    console.log('âœ… ============================================');
-    console.log('âœ… EMAIL SENT SUCCESSFULLY!');
-    console.log('âœ… Message ID:', info.messageId);
-    console.log('âœ… Response:', info.response);
-    console.log('âœ… ============================================');
-    console.log('');
+    console.log('✅ EMAIL SENT SUCCESSFULLY!');
+    console.log('✅ Message ID:', info.messageId);
+    console.log('✅ Response:', info.response);
+    console.log('📧 ========================================\n');
 
     return { 
       success: true, 
@@ -1725,31 +1775,24 @@ async function sendOwnerWelcomeEmail(ownerData) {
     };
 
   } catch (error) {
-    console.error('âŒ ============================================');
-    console.error('âŒ EMAIL SEND FAILED!');
-    console.error('âŒ Error message:', error.message);
-    console.error('âŒ Error code:', error.code);
-    console.error('âŒ Error command:', error.command);
-    console.error('âŒ Full error:', error);
-    console.error('âŒ ============================================');
-    console.error('');
+    console.error('❌ ========================================');
+    console.error('❌ EMAIL SEND FAILED!');
+    console.error('❌ Error:', error.message);
+    console.error('❌ Code:', error.code);
+    console.error('❌ ========================================\n');
     
     return { 
       success: false, 
       error: error.message,
-      code: error.code,
-      command: error.command
+      code: error.code
     };
   }
 }
 
-// 4ï¸âƒ£ UPDATED /api/owner/create with better error handling
+// 2️⃣ THEN: Replace your /api/owner/create endpoint with this COMPLETE version
 app.post('/api/owner/create', authMiddleware, async (req, res) => {
   try {
-    console.log('');
-    console.log('ðŸŽ¯ ============================================');
-    console.log('ðŸŽ¯ CREATE OWNER REQUEST');
-    console.log('ðŸŽ¯ ============================================');
+    console.log('\n🎯 ========== CREATE OWNER REQUEST ==========');
     
     const { 
       owner_name, 
@@ -1761,16 +1804,15 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       google_client_secret 
     } = req.body;
 
-    console.log('ðŸ“¦ Request data:', {
+    console.log('📦 Request data:', {
       owner_name,
       owner_email,
       owner_phone,
       ssid,
-      has_password: !!dev_password,
-      has_google_client_id: !!google_client_id
+      has_dev_password: !!dev_password
     });
 
-    // Validation
+    // ===== VALIDATION =====
     if (!owner_name?.trim()) {
       return res.status(400).json({ message: 'Owner name is required' });
     }
@@ -1787,22 +1829,18 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: 'Device password is required' });
     }
 
-    console.log('âœ… Validation passed');
+    console.log('✅ Validation passed');
 
-    const accesspoint_url = process.env.QR_ACCESS_URL;
-    if (!accesspoint_url) {
-      return res.status(500).json({ 
-        message: 'Server configuration error: QR_ACCESS_URL not set' 
-      });
-    }
+    const accesspoint_url = process.env.QR_ACCESS_URL || 'http://192.168.137.1:5000';
 
-    console.log('ðŸ’¾ Inserting into database...');
+    // ===== DATABASE INSERT =====
+    console.log('💾 Inserting into database...');
 
     const insert = `
       INSERT INTO qr_portal.t_master_owner_details
       (owner_name, owner_email, owner_phone, ssid, dev_password, accesspoint_url, 
        google_client_id, google_client_secret)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING owner_id, owner_name, owner_email, owner_phone, ssid, dev_password, 
                 accesspoint_url, password, google_client_id, google_client_secret
     `;
@@ -1823,44 +1861,52 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
     }
 
     const owner = rows[0];
-    console.log('âœ… Owner created:', {
+    console.log('✅ Owner created:', {
       owner_id: owner.owner_id,
       owner_email: owner.owner_email,
-      has_password: !!owner.password,
-      password_length: owner.password?.length
+      has_auto_password: !!owner.password
     });
 
-    // Generate QR code
+    // ===== GENERATE QR CODE =====
+    console.log('🎨 Generating QR code...');
     const recordUrl = `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
     const qrPath = path.join(qrDir, `${owner.owner_id}-single.png`);
     await QRCode.toFile(qrPath, recordUrl, { width: 400 });
-    console.log('âœ… QR code saved');
+    console.log('✅ QR code saved:', qrPath);
 
-    // ðŸ“§ SEND WELCOME EMAIL
-    console.log('ðŸ“§ Preparing to send welcome email...');
-    
+    // ===== ⚡ SEND WELCOME EMAIL (THIS IS THE CRITICAL PART!) =====
+    console.log('\n📧 ========== EMAIL SECTION START ==========');
     let emailResult = { success: false, error: 'Not attempted' };
     
     try {
-      emailResult = await sendOwnerWelcomeEmail({
-        owner_email: owner.owner_email,
-        owner_name: owner.owner_name,
-        owner_id: owner.owner_id,
-        password: owner.password,
-        ssid: owner.ssid
-      });
-
-      if (emailResult.success) {
-        console.log('âœ… Email sent successfully!');
+      // ✅ MAKE SURE password exists before sending email
+      if (!owner.password) {
+        console.warn('⚠️ No auto-generated password found, skipping email');
+        emailResult = { success: false, error: 'No password generated' };
       } else {
-        console.error('âš ï¸ Email failed:', emailResult.error);
+        console.log('📧 Calling sendOwnerWelcomeEmail...');
+        
+        emailResult = await sendOwnerWelcomeEmail({
+          owner_email: owner.owner_email,
+          owner_name: owner.owner_name,
+          owner_id: owner.owner_id,
+          password: owner.password,
+          ssid: owner.ssid
+        });
+
+        if (emailResult.success) {
+          console.log('✅ Email sent successfully to:', owner.owner_email);
+        } else {
+          console.error('⚠️ Email send failed:', emailResult.error);
+        }
       }
     } catch (emailError) {
-      console.error('âŒ Email exception:', emailError);
+      console.error('❌ Email exception:', emailError.message);
       emailResult = { success: false, error: emailError.message };
     }
+    console.log('📧 ========== EMAIL SECTION END ==========\n');
 
-    // Response
+    // ===== RESPONSE =====
     const response = {
       success: true,
       message: 'Owner created successfully',
@@ -1876,21 +1922,62 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       },
       qr_image: `/qrcodes/${owner.owner_id}-single.png`,
       recordUrl,
+      // ✅ Include email status in response
       emailSent: emailResult.success,
       emailError: !emailResult.success ? emailResult.error : null
     };
 
-    console.log('ðŸŽ‰ Response prepared - emailSent:', emailResult.success);
-    console.log('ðŸŽ¯ ============================================');
-    console.log('');
+    console.log('🎉 Response prepared');
+    console.log('📧 Email sent:', emailResult.success);
+    console.log('🎯 ========================================\n');
     
     res.json(response);
 
   } catch (err) {
-    console.error('âŒ CRITICAL ERROR:', err);
+    console.error('❌ CRITICAL ERROR:', err.message);
+    console.error('❌ Stack:', err.stack);
     res.status(500).json({ 
       message: 'Failed to create owner',
       error: err.message
+    });
+  }
+});
+
+// ============================================
+// 3️⃣ OPTIONAL: Test endpoint to verify email works
+// ============================================
+app.get('/api/test/email/:email', async (req, res) => {
+  try {
+    const testEmail = req.params.email;
+    
+    console.log('📧 Testing email send to:', testEmail);
+    
+    const info = await transporter.sendMail({
+      from: `"DoorBell Test" <${process.env.SMTP_USER}>`,
+      to: testEmail,
+      subject: '✅ Test Email from DoorBell',
+      html: `
+        <h2>🎉 Email Configuration Working!</h2>
+        <p>If you receive this, your SMTP setup is correct.</p>
+        <p>Time: ${new Date().toISOString()}</p>
+      `,
+      text: `Email working! Time: ${new Date().toISOString()}`
+    });
+
+    console.log('✅ Test email sent:', info.messageId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test email sent successfully',
+      messageId: info.messageId,
+      to: testEmail
+    });
+  } catch (err) {
+    console.error('❌ Test email failed:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      code: err.code
     });
   }
 });
@@ -1902,12 +1989,12 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
 // server.js - Add this endpoint
 // Replace the existing endpoint with this:
 app.get('/api/config/google-oauth', (req, res) => {
-  // âœ… Use Web Client ID consistently
+  // ✅ Use Web Client ID consistently
   const webClientId = process.env.WEB_GOOGLE_CLIENT_ID;
   
-  console.log('ðŸ“± OAuth config requested');
-  console.log('ðŸ”‘ Web Client ID available:', !!webClientId);
-  console.log('ðŸ”‘ Client ID (first 30 chars):', webClientId?.substring(0, 30) + '...');
+  console.log('📱 OAuth config requested');
+  console.log('🔑 Web Client ID available:', !!webClientId);
+  console.log('🔑 Client ID (first 30 chars):', webClientId?.substring(0, 30) + '...');
   
   if (!webClientId) {
     return res.status(500).json({ 
@@ -1926,7 +2013,7 @@ app.get('/api/config/google-oauth', (req, res) => {
 app.get('/api/owner/:ownerId/google-auth-url', async (req, res) => {
   try {
     const { ownerId } = req.params;
-    console.log('Ã°Å¸â€â€” Generating Google auth URL for owner:', ownerId);
+    console.log('ðŸ”— Generating Google auth URL for owner:', ownerId);
 
     const { rows } = await pool.query(
       'SELECT google_client_id, google_client_secret, owner_name FROM qr_portal.t_master_owner_details WHERE owner_id = $1',
@@ -1951,11 +2038,11 @@ app.get('/api/owner/:ownerId/google-auth-url', async (req, res) => {
 
     const { google_client_id, google_client_secret } = owner;
 
-    // Ã¢Å“â€¦ CRITICAL: Use consistent redirect URI
+    // âœ… CRITICAL: Use consistent redirect URI
     const backendUrl = process.env.BACKEND_URL || 'http://192.168.137.1:5000';
     const redirectUri = `${backendUrl}/api/owner/google-callback`;
     
-    console.log('Ã°Å¸â€â€” Using Redirect URI:', redirectUri);
+    console.log('ðŸ”— Using Redirect URI:', redirectUri);
 
     // Create OAuth2 client
     const oauth2Client = new google.auth.OAuth2(
@@ -1975,7 +2062,7 @@ app.get('/api/owner/:ownerId/google-auth-url', async (req, res) => {
       prompt: 'consent'
     });
 
-    console.log('Ã¢Å“â€¦ Auth URL generated');
+    console.log('âœ… Auth URL generated');
 
     return res.json({ 
       success: true,
@@ -1984,7 +2071,7 @@ app.get('/api/owner/:ownerId/google-auth-url', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Ã¢ÂÅ’ Error generating auth URL:', err);
+    console.error('âŒ Error generating auth URL:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to generate authorization URL',
@@ -1999,7 +2086,7 @@ app.post('/api/owner/:ownerId/google-auth-callback', async (req, res) => {
   const { ownerId } = req.params;
   const { code, code_verifier } = req.body;
 
-  console.log('ðŸ“± Mobile callback for owner:', ownerId);
+  console.log('📱 Mobile callback for owner:', ownerId);
 
   if (!code || !code_verifier) {
     return res.status(400).json({ 
@@ -2031,21 +2118,21 @@ app.post('/api/owner/:ownerId/google-auth-callback', async (req, res) => {
       });
     }
 
-    // âœ… Use mobile client for token exchange
+    // ✅ Use mobile client for token exchange
     const mobileOAuthClient = new google.auth.OAuth2(
       process.env.GOOGLE_MOBILE_CLIENT_ID,
       null, // Android clients don't have secrets
-      'doorbellapp://oauth2redirect' // âœ… MUST match exactly
+      'doorbellapp://oauth2redirect' // ✅ MUST match exactly
     );
 
-    console.log('ðŸ”„ Exchanging code...');
+    console.log('🔄 Exchanging code...');
 
     const { tokens } = await mobileOAuthClient.getToken({
       code: code,
       code_verifier: code_verifier
     });
 
-    console.log('ðŸ“¦ Tokens:', {
+    console.log('📦 Tokens:', {
       hasAccess: !!tokens.access_token,
       hasRefresh: !!tokens.refresh_token
     });
@@ -2069,7 +2156,7 @@ app.post('/api/owner/:ownerId/google-auth-callback', async (req, res) => {
       ]
     );
 
-    console.log('âœ… Saved tokens');
+    console.log('✅ Saved tokens');
 
     return res.json({
       success: true,
@@ -2079,7 +2166,7 @@ app.post('/api/owner/:ownerId/google-auth-callback', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('âŒ Token error:', err);
+    console.error('❌ Token error:', err);
     
     return res.status(500).json({
       success: false,
@@ -2093,7 +2180,7 @@ app.get('/api/owner/:ownerId/google-status', async (req, res) => {
   try {
     const { ownerId } = req.params;
     
-    console.log('ðŸ” Checking Google Drive status for owner:', ownerId);
+    console.log('🔍 Checking Google Drive status for owner:', ownerId);
     
     const { rows } = await pool.query(
       `SELECT 
@@ -2108,7 +2195,7 @@ app.get('/api/owner/:ownerId/google-status', async (req, res) => {
     );
 
     if (!rows.length) {
-      console.error('âŒ Owner not found:', ownerId);
+      console.error('❌ Owner not found:', ownerId);
       return res.status(404).json({ 
         success: false,
         message: 'Owner not found' 
@@ -2122,7 +2209,7 @@ app.get('/api/owner/:ownerId/google-status', async (req, res) => {
       ? new Date(owner.google_token_expiry) > new Date()
       : false;
 
-    console.log('ðŸ“Š Status:', {
+    console.log('📊 Status:', {
       owner: owner.owner_name,
       isConnected,
       hasValidToken,
@@ -2141,12 +2228,12 @@ app.get('/api/owner/:ownerId/google-status', async (req, res) => {
         email: owner.owner_email
       },
       message: isConnected 
-        ? 'âœ… Google Drive is connected' 
-        : 'âŒ Google Drive not connected'
+        ? '✅ Google Drive is connected' 
+        : '❌ Google Drive not connected'
     });
 
   } catch (err) {
-    console.error('âŒ Status check error:', err);
+    console.error('❌ Status check error:', err);
     return res.status(500).json({ 
       success: false,
       message: 'Failed to check status',
@@ -2185,7 +2272,7 @@ async function refreshGoogleTokenIfNeeded(ownerId) {
 
     // Check if token is expiring
     if (oauth2Client.isTokenExpiring()) {
-      console.log('ðŸ”„ Refreshing expired access token...');
+      console.log('🔄 Refreshing expired access token...');
       const { credentials } = await oauth2Client.refreshAccessToken();
       
       await pool.query(
@@ -2196,12 +2283,12 @@ async function refreshGoogleTokenIfNeeded(ownerId) {
       );
       
       oauth2Client.setCredentials(credentials);
-      console.log('âœ… Token refreshed successfully');
+      console.log('✅ Token refreshed successfully');
     }
 
     return oauth2Client;
   } catch (err) {
-    console.error('âŒ Token refresh error:', err);
+    console.error('❌ Token refresh error:', err);
     return null;
   }
 }
@@ -2209,7 +2296,7 @@ app.post('/api/owner/:ownerId/google-auth-callback-mobile', async (req, res) => 
   const { ownerId } = req.params;
   const { code, code_verifier, customerClientId, customerClientSecret } = req.body;
 
-  console.log('ðŸ“± Mobile OAuth callback for owner:', ownerId);
+  console.log('📱 Mobile OAuth callback for owner:', ownerId);
 
   if (!code || !code_verifier) {
     return res.status(400).json({ 
@@ -2256,7 +2343,7 @@ app.post('/api/owner/:ownerId/google-auth-callback-mobile', async (req, res) => 
       ]
     );
 
-    console.log('âœ… Tokens stored with customer credentials');
+    console.log('✅ Tokens stored with customer credentials');
 
     return res.json({
       success: true,
@@ -2265,7 +2352,7 @@ app.post('/api/owner/:ownerId/google-auth-callback-mobile', async (req, res) => 
     });
 
   } catch (err) {
-    console.error('âŒ Token exchange error:', err);
+    console.error('❌ Token exchange error:', err);
     return res.status(500).json({
       success: false,
       message: 'Failed to exchange authorization code',
@@ -2276,7 +2363,7 @@ app.post('/api/owner/:ownerId/google-auth-callback-mobile', async (req, res) => 
 // Update the uploadToGoogleDrive function to use the helper
 async function uploadToGoogleDrive(ownerId, filePath, fileName, mimeType) {
   try {
-    console.log('ðŸ“¤ Starting Google Drive upload for owner:', ownerId);
+    console.log('📤 Starting Google Drive upload for owner:', ownerId);
 
     const { rows } = await pool.query(
       `SELECT google_client_id, google_client_secret, google_refresh_token, 
@@ -2295,7 +2382,7 @@ async function uploadToGoogleDrive(ownerId, filePath, fileName, mimeType) {
       return { success: false, error: 'Google Drive not connected' };
     }
 
-    // ðŸ”¥ Use CUSTOMER's credentials for uploads (uses their quota)
+    // 🔥 Use CUSTOMER's credentials for uploads (uses their quota)
     const oauth2Client = new google.auth.OAuth2(
       owner.google_client_id,
       owner.google_client_secret,
@@ -2310,7 +2397,7 @@ async function uploadToGoogleDrive(ownerId, filePath, fileName, mimeType) {
 
     // Refresh if needed
     if (oauth2Client.isTokenExpiring()) {
-      console.log('ðŸ”„ Refreshing expired access token...');
+      console.log('🔄 Refreshing expired access token...');
       const { credentials } = await oauth2Client.refreshAccessToken();
       
       await pool.query(
@@ -2321,7 +2408,7 @@ async function uploadToGoogleDrive(ownerId, filePath, fileName, mimeType) {
       );
       
       oauth2Client.setCredentials(credentials);
-      console.log('âœ… Token refreshed successfully');
+      console.log('✅ Token refreshed successfully');
     }
 
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
@@ -2348,7 +2435,7 @@ async function uploadToGoogleDrive(ownerId, filePath, fileName, mimeType) {
         folderId = folder.data.id;
       }
     } catch (folderErr) {
-      console.warn('âš ï¸ Could not create/find folder');
+      console.warn('⚠️ Could not create/find folder');
       folderId = 'root';
     }
 
@@ -2369,7 +2456,7 @@ async function uploadToGoogleDrive(ownerId, filePath, fileName, mimeType) {
       fields: 'id, name, webViewLink, webContentLink, size, createdTime'
     });
 
-    console.log('âœ… Upload successful! File ID:', response.data.id);
+    console.log('✅ Upload successful! File ID:', response.data.id);
 
     return {
       success: true,
@@ -2382,7 +2469,7 @@ async function uploadToGoogleDrive(ownerId, filePath, fileName, mimeType) {
     };
 
   } catch (err) {
-    console.error('âŒ Google Drive upload error:', err);
+    console.error('❌ Google Drive upload error:', err);
     return {
       success: false,
       error: err.message
@@ -2422,9 +2509,9 @@ app.get('/api/owner/:ownerId/google-config-check', async (req, res) => {
       redirectUri: `${backendUrl}/api/owner/google-callback`,
       instructions: [
         '1. Go to Google Cloud Console',
-        '2. Navigate to: APIs & Services Ã¢â€ â€™ OAuth consent screen',
+        '2. Navigate to: APIs & Services â†’ OAuth consent screen',
         `3. Add "${owner.owner_email}" as a test user`,
-        '4. Navigate to: APIs & Services Ã¢â€ â€™ Credentials',
+        '4. Navigate to: APIs & Services â†’ Credentials',
         '5. Add this redirect URI: ' + `${backendUrl}/api/owner/google-callback`,
         '6. Save and try again'
       ]
@@ -2469,7 +2556,7 @@ app.get('/api/owner/:ownerId/test-google-credentials', async (req, res) => {
 app.get('/api/oauth/mobile-redirect', async (req, res) => {
   const { code, state, error, error_description } = req.query;
   
-  console.log('ðŸ“± OAuth redirect received:', { 
+  console.log('📱 OAuth redirect received:', { 
     hasCode: !!code, 
     hasError: !!error,
     state: state 
@@ -2482,7 +2569,7 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
   let customerClientSecret = null;
   
   if (error) {
-    console.error('âŒ OAuth error:', error, error_description);
+    console.error('❌ OAuth error:', error, error_description);
     errorMessage = error_description || error;
   } else if (code && state) {
     try {
@@ -2492,15 +2579,15 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
       customerClientId = stateData.customerClientId;
       customerClientSecret = stateData.customerClientSecret;
       
-      console.log('ðŸ”„ Exchanging code for tokens for owner:', ownerId);
+      console.log('🔄 Exchanging code for tokens for owner:', ownerId);
       
-      // âœ… Use Web Client credentials from env
+      // ✅ Use Web Client credentials from env
       const webClientId = process.env.WEB_GOOGLE_CLIENT_ID;
       const webClientSecret = process.env.WEB_GOOGLE_SECRET_KEY;
       const redirectUri = `${process.env.BACKEND_URL}/api/oauth/mobile-redirect`;
       
-      console.log('ðŸ”‘ Using Web Client:', webClientId?.substring(0, 30) + '...');
-      console.log('ðŸ”— Redirect URI:', redirectUri);
+      console.log('🔑 Using Web Client:', webClientId?.substring(0, 30) + '...');
+      console.log('🔗 Redirect URI:', redirectUri);
       
       // Exchange code for tokens using Web client
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -2517,7 +2604,7 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
       
       const tokens = await tokenResponse.json();
       
-      console.log('ðŸ“¦ Token response:', {
+      console.log('📦 Token response:', {
         ok: tokenResponse.ok,
         hasAccess: !!tokens.access_token,
         hasRefresh: !!tokens.refresh_token,
@@ -2528,7 +2615,7 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
         throw new Error(tokens.error_description || tokens.error || 'Token exchange failed');
       }
       
-      console.log('âœ… Tokens received');
+      console.log('✅ Tokens received');
       
       // Save tokens to database using CUSTOMER's credentials
       await pool.query(
@@ -2549,11 +2636,11 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
         ]
       );
       
-      console.log('âœ… Tokens saved to database for owner:', ownerId);
+      console.log('✅ Tokens saved to database for owner:', ownerId);
       success = true;
       
     } catch (err) {
-      console.error('âŒ Token exchange error:', err);
+      console.error('❌ Token exchange error:', err);
       errorMessage = err.message || 'Failed to exchange authorization code';
     }
   } else {
@@ -2576,7 +2663,7 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
     deepLink += '?' + params.toString();
   }
   
-  console.log('ðŸ”— Redirecting to deep link:', deepLink);
+  console.log('🔗 Redirecting to deep link:', deepLink);
   
   // Return HTML with automatic redirect
   res.send(`
@@ -2584,7 +2671,7 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
     <html>
     <head>
       <meta charset="utf-8">
-      <title>${success ? 'âœ… Connected!' : 'âŒ Error'}</title>
+      <title>${success ? '✅ Connected!' : '❌ Error'}</title>
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <style>
         body {
@@ -2664,11 +2751,11 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
     </head>
     <body>
       <div class="container">
-        <div class="icon">${success ? 'âœ…' : 'âŒ'}</div>
+        <div class="icon">${success ? '✅' : '❌'}</div>
         <h1>${success ? 'Google Drive Connected!' : 'Authorization Failed'}</h1>
         <p>
           ${success 
-            ? 'Your videos will now be automatically saved to Google Drive! ðŸŽ‰' 
+            ? 'Your videos will now be automatically saved to Google Drive! 🎉' 
             : 'Something went wrong during authorization.'
           }
         </p>
@@ -2677,7 +2764,7 @@ app.get('/api/oauth/mobile-redirect', async (req, res) => {
         <p style="font-size: 0.95rem;">Returning to app...</p>
         <div class="manual-link" id="manualLink">
           <p>App didn't open automatically?</p>
-          <a href="${deepLink}" id="deepLinkBtn">ðŸ‘‰ Click here to return to app</a>
+          <a href="${deepLink}" id="deepLinkBtn">👉 Click here to return to app</a>
         </div>
       </div>
       <script>
@@ -2805,7 +2892,7 @@ app.post('/api/qr/generate-single', async (req, res) => {
     ctx.fillText('Scan to Record & Connect', 300, 600);
     
     ctx.font = '16px sans-serif';
-    ctx.fillText('Video ÃƒÂ¢Ã¢â‚¬ Ã¢â‚¬â„¢ WiFi ÃƒÂ¢Ã¢â‚¬ Ã¢â‚¬â„¢ Doorbell', 300, 640);
+    ctx.fillText('Video Ã¢â€ â€™ WiFi Ã¢â€ â€™ Doorbell', 300, 640);
 
     const filename = `${ownerId}-single.png`;
     const outPath = path.join(qrDir, filename);
@@ -2846,7 +2933,7 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
   };
 
   try {
-    // 1ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Upload to S3 (existing)
+    // 1Ã¯Â¸ÂÃ¢Æ’Â£ Upload to S3 (existing)
     const s3Stream = fs.createReadStream(file.path);
     await s3.send(new PutObjectCommand({
       Bucket: process.env.S3_BUCKET_NAME,
@@ -2861,7 +2948,7 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
       { expiresIn: 3600 }
     );
 
-    // 2ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Upload to Google Drive (new)
+    // 2Ã¯Â¸ÂÃ¢Æ’Â£ Upload to Google Drive (new)
     let driveResult = null;
     if (ownerId) {
       driveResult = await uploadToGoogleDrive(
@@ -2872,7 +2959,7 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
       );
     }
 
-    // 3ÃƒÂ¯Ã‚Â¸Ã‚ÂÃƒÂ¢Ã†â€™Ã‚Â£ Send email notification
+    // 3Ã¯Â¸ÂÃ¢Æ’Â£ Send email notification
     let ownerEmail = null;
     let emailSent = false;
     
@@ -2892,7 +2979,7 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
           await transporter.sendMail({
             from: `"DoorBell" <${process.env.SMTP_USER}>`,
             to: ownerEmail,
-            subject: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¹ New visitor video recorded',
+            subject: 'Ã°Å¸â€œÂ¹ New visitor video recorded',
             html: `
               <p>Hello,</p>
               <p>A visitor recorded a video for your DoorBell instance.</p>
@@ -2901,8 +2988,8 @@ app.post('/api/upload', upload.single('video'), async (req, res) => {
                 <li><a href="${signedUrl}">View on S3 (expires in 1 hour)</a></li>
                 ${driveResult?.success ? `<li><a href="${driveResult.webViewLink}">View on Google Drive (permanent)</a></li>` : ''}
               </ul>
-              ${driveResult?.success ? '<p><strong>ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Video also saved to your Google Drive</strong></p>' : ''}
-              ${!driveResult?.success && driveResult ? `<p>ÃƒÂ¢Ã…Â¡ ÃƒÂ¯Ã‚Â¸Ã‚Â Google Drive upload failed: ${driveResult.error}</p>` : ''}
+              ${driveResult?.success ? '<p><strong>Ã¢Å“â€¦ Video also saved to your Google Drive</strong></p>' : ''}
+              ${!driveResult?.success && driveResult ? `<p>Ã¢Å¡ Ã¯Â¸Â Google Drive upload failed: ${driveResult.error}</p>` : ''}
             `
           });
           emailSent = true;
@@ -2939,7 +3026,7 @@ app.post('/api/notify-owner-call', async (req, res) => {
       return res.status(400).json({ message: 'ownerId and roomLink required' });
     }
 
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¹ Video call notification request:', { ownerId, roomLink });
+    console.log('Ã°Å¸â€œÂ¹ Video call notification request:', { ownerId, roomLink });
 
     // Get owner details
     const { rows } = await pool.query(
@@ -2959,10 +3046,10 @@ app.post('/api/notify-owner-call', async (req, res) => {
       await transporter.sendMail({
         from: `"DoorBell" <${process.env.SMTP_USER}>`,
         to: owner.owner_email,
-        subject: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¹ Someone wants to video call you!',
+        subject: 'Ã°Å¸â€œÂ¹ Someone wants to video call you!',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Visitor at Your Door!</h2>
+            <h2 style="color: #333;">Ã°Å¸â€â€ Visitor at Your Door!</h2>
             <p>Hello ${owner.owner_name},</p>
             <p>A visitor at your doorstep wants to video call with you.</p>
             
@@ -2972,7 +3059,7 @@ app.post('/api/notify-owner-call', async (req, res) => {
                  style="display: inline-block; background: #25D366; color: white; 
                         padding: 12px 24px; text-decoration: none; border-radius: 6px; 
                         font-weight: bold; margin-top: 10px;">
-                ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¹ Join Video Call Now
+                Ã°Å¸â€œÂ¹ Join Video Call Now
               </a>
             </div>
             
@@ -2990,7 +3077,7 @@ app.post('/api/notify-owner-call', async (req, res) => {
         `
       });
 
-      console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Video call notification sent to:', owner.owner_email);
+      console.log('Ã¢Å“â€¦ Video call notification sent to:', owner.owner_email);
 
       // Also publish to MQTT for real-time notification (optional)
       if (mqttConnected) {
@@ -2998,7 +3085,7 @@ app.post('/api/notify-owner-call', async (req, res) => {
           roomLink,
           timestamp: Date.now()
         }));
-        console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ MQTT notification sent');
+        console.log('Ã¢Å“â€¦ MQTT notification sent');
       }
 
       return res.json({ 
@@ -3008,7 +3095,7 @@ app.post('/api/notify-owner-call', async (req, res) => {
       });
 
     } catch (mailErr) {
-      console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Email send failed:', mailErr);
+      console.error('Ã¢ÂÅ’ Email send failed:', mailErr);
       return res.status(500).json({ 
         success: false, 
         message: 'Failed to send email notification',
@@ -3017,7 +3104,7 @@ app.post('/api/notify-owner-call', async (req, res) => {
     }
 
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ notify-owner-call error', err);
+    console.error('Ã¢ÂÅ’ notify-owner-call error', err);
     return res.status(500).json({ 
       success: false,
       message: 'Internal server error',
@@ -3052,7 +3139,7 @@ app.post('/api/video-call/create-room', async (req, res) => {
       });
     }
 
-    console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¹ Creating Twilio video room for owner:', ownerId);
+    console.log('Ã°Å¸â€œÂ¹ Creating Twilio video room for owner:', ownerId);
 
     // Get owner details
     const { rows } = await pool.query(
@@ -3072,17 +3159,17 @@ app.post('/api/video-call/create-room', async (req, res) => {
       process.env.TWILIO_AUTH_TOKEN
     );
 
-    // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ FIXED: Use 'group' room type (current standard)
+    // Ã¢Å“â€¦ FIXED: Use 'group' room type (current standard)
     const room = await twilioClient.video.v1.rooms.create({
       uniqueName: `doorbell-${ownerId}-${Date.now()}`,
-      type: 'group',  // ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ CHANGED from 'go' to 'group'
+      type: 'group',  // Ã¢Å“â€¦ CHANGED from 'go' to 'group'
       maxParticipants: 2,
       // Optional: Add timeout settings
       unusedRoomTimeout: 5,  // Room closes after 5 minutes if no one joins
       emptyRoomTimeout: 1    // Room closes 1 minute after last person leaves
     });
 
-    console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Twilio room created:', room.sid, '- Type:', room.type);
+    console.log('Ã¢Å“â€¦ Twilio room created:', room.sid, '- Type:', room.type);
 
     // Generate access tokens
     const AccessToken = twilio.jwt.AccessToken;
@@ -3117,10 +3204,10 @@ app.post('/api/video-call/create-room', async (req, res) => {
       await transporter.sendMail({
         from: `"DoorBell" <${process.env.SMTP_USER}>`,
         to: owner.owner_email,
-        subject: 'ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¹ Visitor Calling at Your Door!',
+        subject: 'Ã°Å¸â€œÂ¹ Visitor Calling at Your Door!',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #333;">ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Â Someone at Your Doorstep!</h2>
+            <h2 style="color: #333;">Ã°Å¸â€â€ Someone at Your Doorstep!</h2>
             <p>Hello ${owner.owner_name},</p>
             <p>A visitor wants to video call with you right now.</p>
             
@@ -3129,7 +3216,7 @@ app.post('/api/video-call/create-room', async (req, res) => {
                  style="display: inline-block; background: #0263E0; color: white; 
                         padding: 15px 30px; text-decoration: none; border-radius: 8px; 
                         font-weight: bold; font-size: 18px;">
-                ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¹ JOIN VIDEO CALL NOW
+                Ã°Å¸â€œÂ¹ JOIN VIDEO CALL NOW
               </a>
             </div>
             
@@ -3144,7 +3231,7 @@ app.post('/api/video-call/create-room', async (req, res) => {
         `
       });
 
-      console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ Owner notification sent to:', owner.owner_email);
+      console.log('Ã¢Å“â€¦ Owner notification sent to:', owner.owner_email);
 
       // Optional: MQTT notification
       if (mqttConnected) {
@@ -3156,7 +3243,7 @@ app.post('/api/video-call/create-room', async (req, res) => {
       }
 
     } catch (mailErr) {
-      console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Email send failed:', mailErr);
+      console.error('Ã¢ÂÅ’ Email send failed:', mailErr);
     }
 
     // Return visitor token
@@ -3170,7 +3257,7 @@ app.post('/api/video-call/create-room', async (req, res) => {
     });
 
   } catch (err) {
-    console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ Twilio video call error:', err);
+    console.error('Ã¢ÂÅ’ Twilio video call error:', err);
     return res.status(500).json({
       success: false,
       message: 'Failed to create video room',
@@ -3188,6 +3275,6 @@ app.post('/api/video-call/create-room', async (req, res) => {
 /* ----------------------- START SERVER ----------------------- */
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`ÃƒÂ°Ã…Â¸Ã…Â¡Ã¢â€šÂ¬ Server running at http://192.168.137.1:${PORT}`);
-  console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬Å“Ã‚Â¡ MQTT Status: ${mqttConnected ? 'Connected' : 'Connecting...'}`);
+  console.log(`Ã°Å¸Å¡â‚¬ Server running at http://192.168.137.1:${PORT}`);
+  console.log(`Ã°Å¸â€œÂ¡ MQTT Status: ${mqttConnected ? 'Connected' : 'Connecting...'}`);
 });
