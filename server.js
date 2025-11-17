@@ -1790,8 +1790,6 @@ async function sendOwnerWelcomeEmail(ownerData) {
 }
 
 // 2️⃣ THEN: Replace your /api/owner/create endpoint with this COMPLETE version
-// Replace your /api/owner/create endpoint with this FIXED version
-
 app.post('/api/owner/create', authMiddleware, async (req, res) => {
   try {
     console.log('\n🎯 ========== CREATE OWNER REQUEST ==========');
@@ -1811,26 +1809,24 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       owner_email,
       owner_phone,
       ssid,
-      has_dev_password: !!dev_password,
-      has_google_client_id: !!google_client_id,
-      has_google_client_secret: !!google_client_secret
+      has_dev_password: !!dev_password
     });
 
     // ===== VALIDATION =====
     if (!owner_name?.trim()) {
-      return res.status(400).json({ success: false, message: 'Owner name is required' });
+      return res.status(400).json({ message: 'Owner name is required' });
     }
     if (!owner_email?.trim()) {
-      return res.status(400).json({ success: false, message: 'Owner email is required' });
+      return res.status(400).json({ message: 'Owner email is required' });
     }
     if (!owner_phone?.trim()) {
-      return res.status(400).json({ success: false, message: 'Owner phone is required' });
+      return res.status(400).json({ message: 'Owner phone is required' });
     }
     if (!ssid?.trim()) {
-      return res.status(400).json({ success: false, message: 'SSID is required' });
+      return res.status(400).json({ message: 'SSID is required' });
     }
     if (!dev_password?.trim()) {
-      return res.status(400).json({ success: false, message: 'Device password is required' });
+      return res.status(400).json({ message: 'Device password is required' });
     }
 
     console.log('✅ Validation passed');
@@ -1861,11 +1857,7 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
     ]);
 
     if (!rows.length) {
-      console.error('❌ Database insert returned no rows');
-      return res.status(500).json({ 
-        success: false,
-        message: 'Database insert failed - no data returned' 
-      });
+      return res.status(500).json({ message: 'Database insert failed' });
     }
 
     const owner = rows[0];
@@ -1877,134 +1869,44 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
 
     // ===== GENERATE QR CODE =====
     console.log('🎨 Generating QR code...');
-    
-    try {
-      const recordUrl = `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
-      const qrPath = path.join(qrDir, `${owner.owner_id}-single.png`);
-      
-      await QRCode.toFile(qrPath, recordUrl, { width: 400 });
-      console.log('✅ QR code saved:', qrPath);
-    } catch (qrError) {
-      console.error('⚠️ QR generation failed (non-critical):', qrError.message);
-      // Continue even if QR fails
-    }
+    const recordUrl = `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
+    const qrPath = path.join(qrDir, `${owner.owner_id}-single.png`);
+    await QRCode.toFile(qrPath, recordUrl, { width: 400 });
+    console.log('✅ QR code saved:', qrPath);
 
-    // ===== ⚡ SEND WELCOME EMAIL =====
+    // ===== ⚡ SEND WELCOME EMAIL (THIS IS THE CRITICAL PART!) =====
+    console.log('\n📧 ========== EMAIL SECTION START ==========');
     let emailResult = { success: false, error: 'Not attempted' };
     
-    // Only try to send email if we have valid SMTP config AND auto-generated password
-    if (process.env.SMTP_USER && process.env.SMTP_PASS && owner.password) {
-      try {
-        console.log('📧 Attempting to send welcome email...');
+    try {
+      // ✅ MAKE SURE password exists before sending email
+      if (!owner.password) {
+        console.warn('⚠️ No auto-generated password found, skipping email');
+        emailResult = { success: false, error: 'No password generated' };
+      } else {
+        console.log('📧 Calling sendOwnerWelcomeEmail...');
         
-        const emailHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-              .container { background: #fff; border-radius: 12px; padding: 32px; }
-              .header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 24px; }
-              .credential-box { background: #f8f9fa; border-left: 4px solid #4285f4; padding: 20px; margin: 20px 0; border-radius: 8px; }
-              .credential-item { background: #fff; padding: 16px; margin: 12px 0; border-radius: 8px; border: 1px solid #e0e0e0; }
-              .label { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
-              .value { font-size: 18px; font-weight: 700; color: #1a1a1a; font-family: monospace; word-break: break-all; }
-              .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; margin: 20px 0; border-radius: 8px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="header">
-                <h1 style="color: #1a1a1a; margin: 0;">🔔 Welcome to DoorBell!</h1>
-                <p style="color: #666; margin: 8px 0 0 0;">Your Smart Doorbell Account is Ready</p>
-              </div>
-              
-              <div style="padding: 24px 0;">
-                <p style="font-size: 18px;">Hello <strong>${owner.owner_name}</strong>,</p>
-                <p>Your DoorBell owner account has been created! Use these credentials to login to the Owner Dashboard.</p>
-                
-                <div class="credential-box">
-                  <h3 style="margin: 0 0 16px 0;">🔑 Your Login Credentials</h3>
-                  
-                  <div class="credential-item">
-                    <div class="label">Owner ID</div>
-                    <div class="value">${owner.owner_id}</div>
-                  </div>
-                  
-                  <div class="credential-item">
-                    <div class="label">Email Address</div>
-                    <div class="value">${owner.owner_email}</div>
-                  </div>
-                  
-                  <div class="credential-item">
-                    <div class="label">Temporary Password</div>
-                    <div class="value">${owner.password}</div>
-                  </div>
-                </div>
-                
-                <div class="warning">
-                  <strong>⚠️ Security Notice:</strong> Please change your password after first login.
-                </div>
-                
-                <div style="background: #e8f4fd; padding: 20px; margin: 20px 0; border-radius: 8px;">
-                  <h3 style="margin: 0 0 12px 0; color: #0d47a1;">📱 How to Login:</h3>
-                  <ol style="margin: 0; padding-left: 24px;">
-                    <li>Open the DoorBell mobile app</li>
-                    <li>Tap "Owner Login"</li>
-                    <li>Enter your email and password</li>
-                    <li>Access your dashboard</li>
-                  </ol>
-                </div>
-                
-                <div class="credential-box">
-                  <h3 style="margin: 0 0 8px 0;">📡 Device Configuration</h3>
-                  <p style="margin: 0;"><strong>WiFi Network:</strong> ${owner.ssid}</p>
-                </div>
-              </div>
-              
-              <div style="text-align: center; padding-top: 24px; border-top: 2px solid #f0f0f0; color: #666; font-size: 14px;">
-                <p style="margin: 0;">DoorBell Smart Security System</p>
-              </div>
-            </div>
-          </body>
-          </html>
-        `;
+        emailResult = await sendOwnerWelcomeEmail({
+          owner_email: owner.owner_email,
+          owner_name: owner.owner_name,
+          owner_id: owner.owner_id,
+          password: owner.password,
+          ssid: owner.ssid
+        });
 
-        const mailOptions = {
-          from: `"DoorBell System" <${process.env.SMTP_USER}>`,
-          to: owner.owner_email,
-          subject: '🎉 Welcome to DoorBell - Your Account is Ready!',
-          html: emailHtml,
-          text: `Welcome to DoorBell, ${owner.owner_name}!\n\nYour Login Credentials:\n- Owner ID: ${owner.owner_id}\n- Email: ${owner.owner_email}\n- Password: ${owner.password}\n\nLogin via the DoorBell mobile app.\n\nYour WiFi: ${owner.ssid}`
-        };
-
-        const info = await transporter.sendMail(mailOptions);
-
-        console.log('✅ EMAIL SENT SUCCESSFULLY!');
-        console.log('✅ Message ID:', info.messageId);
-        emailResult = { 
-          success: true, 
-          messageId: info.messageId 
-        };
-
-      } catch (emailError) {
-        console.error('⚠️ Email send failed (non-critical):', emailError.message);
-        emailResult = { 
-          success: false, 
-          error: emailError.message 
-        };
-        // DON'T throw - continue with response
+        if (emailResult.success) {
+          console.log('✅ Email sent successfully to:', owner.owner_email);
+        } else {
+          console.error('⚠️ Email send failed:', emailResult.error);
+        }
       }
-    } else {
-      console.log('⚠️ Skipping email: Missing SMTP config or password');
-      emailResult = { 
-        success: false, 
-        error: 'SMTP not configured or no password generated' 
-      };
+    } catch (emailError) {
+      console.error('❌ Email exception:', emailError.message);
+      emailResult = { success: false, error: emailError.message };
     }
+    console.log('📧 ========== EMAIL SECTION END ==========\n');
 
-    // ===== ALWAYS SEND SUCCESS RESPONSE =====
+    // ===== RESPONSE =====
     const response = {
       success: true,
       message: 'Owner created successfully',
@@ -2012,7 +1914,6 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
         owner_id: owner.owner_id,
         owner_name: owner.owner_name,
         owner_email: owner.owner_email,
-        owner_phone: owner.owner_phone,
         ssid: owner.ssid,
         dev_password: owner.dev_password,
         accesspoint_url: owner.accesspoint_url,
@@ -2020,28 +1921,24 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
         google_client_secret: owner.google_client_secret || null
       },
       qr_image: `/qrcodes/${owner.owner_id}-single.png`,
-      recordUrl: `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`,
+      recordUrl,
+      // ✅ Include email status in response
       emailSent: emailResult.success,
       emailError: !emailResult.success ? emailResult.error : null
     };
 
-    console.log('🎉 Owner creation complete');
+    console.log('🎉 Response prepared');
     console.log('📧 Email sent:', emailResult.success);
     console.log('🎯 ========================================\n');
     
-    // ✅ CRITICAL: Always return JSON
-    return res.status(200).json(response);
+    res.json(response);
 
   } catch (err) {
-    console.error('❌ CRITICAL ERROR in /api/owner/create:', err);
+    console.error('❌ CRITICAL ERROR:', err.message);
     console.error('❌ Stack:', err.stack);
-    
-    // ✅ CRITICAL: Always return JSON, never let it fall through to default error handler
-    return res.status(500).json({ 
-      success: false,
+    res.status(500).json({ 
       message: 'Failed to create owner',
-      error: err.message,
-      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      error: err.message
     });
   }
 });
