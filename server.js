@@ -1533,96 +1533,33 @@ app.post('/api/ring', (req, res) => {
 // });
 
 // ============================================
-// COMPLETE EMAIL DEBUGGING SOLUTION
-// Add this to your server.js
+// COM// ============================================
+// COMPLETE FIX FOR OWNER CREATION WITH EMAIL
+// Replace your existing /api/owner/create endpoint with this
 // ============================================
 
-// 1️⃣ First, verify your transporter is configured correctly
-// Add this IMMEDIATELY after your transporter setup:
-
-console.log('📧 ========================================');
-console.log('📧 EMAIL CONFIGURATION CHECK');
-console.log('📧 ========================================');
-console.log('SMTP_HOST:', process.env.SMTP_HOST);
-console.log('SMTP_PORT:', process.env.SMTP_PORT);
-console.log('SMTP_USER:', process.env.SMTP_USER);
-console.log('SMTP_PASS exists:', !!process.env.SMTP_PASS);
-console.log('SMTP_PASS length:', process.env.SMTP_PASS?.length || 0);
-console.log('📧 ========================================');
-
-// 2. TEST SMTP CONNECTION ON STARTUP
-// Add this after transporter setup
-transporter.verify(function (error, success) {
-  if (error) {
-    console.error('❌ SMTP CONNECTION FAILED:', error);
-  } else {
-    console.log('✅ SMTP Server is ready to send emails');
-  }
-});
-
-// 3. CREATE A TEST EMAIL ENDPOINT
-// Add this to server.js to test email independently
-app.get('/api/test/quick-email', async (req, res) => {
-  try {
-    console.log('📧 Quick email test starting...');
-    
-    const info = await transporter.sendMail({
-      from: process.env.SMTP_USER,
-      to: 'your-test-email@gmail.com', // Replace with your email
-      subject: 'Test from DoorBell',
-      text: 'If you receive this, email is working!',
-      html: '<h1>✅ Email Working!</h1><p>Time: ' + new Date().toISOString() + '</p>'
-    });
-
-    console.log('✅ Email sent:', info.messageId);
-    res.json({ success: true, messageId: info.messageId });
-  } catch (err) {
-    console.error('❌ Email failed:', err);
-    res.status(500).json({ error: err.message, code: err.code });
-  }
-});
-
-// 4. CRITICAL FIX: Your sendOwnerWelcomeEmail function is defined but may not be called!
-// Make sure it's placed BEFORE the /api/owner/create endpoint in server.js
-
+// 1️⃣ FIRST: Add this function BEFORE the endpoint (if not already present)
 async function sendOwnerWelcomeEmail(ownerData) {
-  console.log('');
-  console.log('📧 ============================================');
-  console.log('📧 SEND OWNER WELCOME EMAIL - START');
-  console.log('📧 ============================================');
+  console.log('📧 ========== SENDING WELCOME EMAIL ==========');
   
   try {
     const { owner_email, owner_name, owner_id, password, ssid } = ownerData;
     
-    console.log('📧 Input data:', {
-      owner_email,
-      owner_name,
+    console.log('📧 Email Details:', {
+      to: owner_email,
+      name: owner_name,
       owner_id,
-      has_password: !!password,
-      password_length: password?.length || 0,
-      ssid
+      has_password: !!password
     });
 
-    // Validate inputs
+    // Validate
     if (!owner_email) throw new Error('owner_email is required');
     if (!owner_name) throw new Error('owner_name is required');
     if (!password) throw new Error('password is required');
 
-    console.log('✅ Data validation passed');
-
-    // Check SMTP config
-    console.log('📧 SMTP Config:', {
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT,
-      user: process.env.SMTP_USER,
-      has_pass: !!process.env.SMTP_PASS
-    });
-
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      throw new Error('SMTP credentials not configured in .env');
+      throw new Error('SMTP credentials not configured');
     }
-
-    console.log('✅ SMTP config validated');
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -1649,7 +1586,7 @@ async function sendOwnerWelcomeEmail(ownerData) {
           
           <div style="padding: 24px 0;">
             <p style="font-size: 18px;">Hello <strong>${owner_name}</strong>,</p>
-            <p>Your DoorBell owner account has been created! Use these credentials to login to the Owner Dashboard in the mobile app.</p>
+            <p>Your DoorBell owner account has been created! Use these credentials to login to the Owner Dashboard.</p>
             
             <div class="credential-box">
               <h3 style="margin: 0 0 16px 0;">🔑 Your Login Credentials</h3>
@@ -1698,10 +1635,7 @@ async function sendOwnerWelcomeEmail(ownerData) {
       </html>
     `;
 
-    console.log('✅ HTML email template built');
-    console.log('📧 Attempting to send email...');
-    console.log('📧 From:', process.env.SMTP_USER);
-    console.log('📧 To:', owner_email);
+    console.log('📧 Sending email to:', owner_email);
 
     const mailOptions = {
       from: `"DoorBell System" <${process.env.SMTP_USER}>`,
@@ -1711,16 +1645,12 @@ async function sendOwnerWelcomeEmail(ownerData) {
       text: `Welcome to DoorBell, ${owner_name}!\n\nYour Login Credentials:\n- Owner ID: ${owner_id}\n- Email: ${owner_email}\n- Password: ${password}\n\nLogin via the DoorBell mobile app.\n\nYour WiFi: ${ssid}`
     };
 
-    console.log('📧 Calling transporter.sendMail()...');
-    
     const info = await transporter.sendMail(mailOptions);
 
-    console.log('✅ ============================================');
     console.log('✅ EMAIL SENT SUCCESSFULLY!');
     console.log('✅ Message ID:', info.messageId);
     console.log('✅ Response:', info.response);
-    console.log('✅ ============================================');
-    console.log('');
+    console.log('📧 ========================================\n');
 
     return { 
       success: true, 
@@ -1729,31 +1659,24 @@ async function sendOwnerWelcomeEmail(ownerData) {
     };
 
   } catch (error) {
-    console.error('❌ ============================================');
+    console.error('❌ ========================================');
     console.error('❌ EMAIL SEND FAILED!');
-    console.error('❌ Error message:', error.message);
-    console.error('❌ Error code:', error.code);
-    console.error('❌ Error command:', error.command);
-    console.error('❌ Full error:', error);
-    console.error('❌ ============================================');
-    console.error('');
+    console.error('❌ Error:', error.message);
+    console.error('❌ Code:', error.code);
+    console.error('❌ ========================================\n');
     
     return { 
       success: false, 
       error: error.message,
-      code: error.code,
-      command: error.command
+      code: error.code
     };
   }
 }
 
-// 5. UPDATED /api/owner/create ENDPOINT
+// 2️⃣ THEN: Replace your /api/owner/create endpoint with this COMPLETE version
 app.post('/api/owner/create', authMiddleware, async (req, res) => {
   try {
-    console.log('');
-    console.log('🎯 ============================================');
-    console.log('🎯 CREATE OWNER REQUEST');
-    console.log('🎯 ============================================');
+    console.log('\n🎯 ========== CREATE OWNER REQUEST ==========');
     
     const { 
       owner_name, 
@@ -1770,11 +1693,10 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       owner_email,
       owner_phone,
       ssid,
-      has_password: !!dev_password,
-      has_google_client_id: !!google_client_id
+      has_dev_password: !!dev_password
     });
 
-    // Validation
+    // ===== VALIDATION =====
     if (!owner_name?.trim()) {
       return res.status(400).json({ message: 'Owner name is required' });
     }
@@ -1793,20 +1715,16 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
 
     console.log('✅ Validation passed');
 
-    const accesspoint_url = process.env.QR_ACCESS_URL;
-    if (!accesspoint_url) {
-      return res.status(500).json({ 
-        message: 'Server configuration error: QR_ACCESS_URL not set' 
-      });
-    }
+    const accesspoint_url = process.env.QR_ACCESS_URL || 'http://192.168.137.1:5000';
 
+    // ===== DATABASE INSERT =====
     console.log('💾 Inserting into database...');
 
     const insert = `
       INSERT INTO qr_portal.t_master_owner_details
       (owner_name, owner_email, owner_phone, ssid, dev_password, accesspoint_url, 
        google_client_id, google_client_secret)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING owner_id, owner_name, owner_email, owner_phone, ssid, dev_password, 
                 accesspoint_url, password, google_client_id, google_client_secret
     `;
@@ -1830,41 +1748,49 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
     console.log('✅ Owner created:', {
       owner_id: owner.owner_id,
       owner_email: owner.owner_email,
-      has_password: !!owner.password,
-      password_length: owner.password?.length
+      has_auto_password: !!owner.password
     });
 
-    // Generate QR code
+    // ===== GENERATE QR CODE =====
+    console.log('🎨 Generating QR code...');
     const recordUrl = `${accesspoint_url}/record?ownerId=${owner.owner_id}&ssid=${encodeURIComponent(ssid)}&pwd=${encodeURIComponent(dev_password)}`;
     const qrPath = path.join(qrDir, `${owner.owner_id}-single.png`);
     await QRCode.toFile(qrPath, recordUrl, { width: 400 });
-    console.log('✅ QR code saved');
+    console.log('✅ QR code saved:', qrPath);
 
-    // 📧 SEND WELCOME EMAIL
-    console.log('📧 Preparing to send welcome email...');
-    
+    // ===== ⚡ SEND WELCOME EMAIL (THIS IS THE CRITICAL PART!) =====
+    console.log('\n📧 ========== EMAIL SECTION START ==========');
     let emailResult = { success: false, error: 'Not attempted' };
     
     try {
-      emailResult = await sendOwnerWelcomeEmail({
-        owner_email: owner.owner_email,
-        owner_name: owner.owner_name,
-        owner_id: owner.owner_id,
-        password: owner.password,
-        ssid: owner.ssid
-      });
-
-      if (emailResult.success) {
-        console.log('✅ Email sent successfully!');
+      // ✅ MAKE SURE password exists before sending email
+      if (!owner.password) {
+        console.warn('⚠️ No auto-generated password found, skipping email');
+        emailResult = { success: false, error: 'No password generated' };
       } else {
-        console.error('⚠️ Email failed:', emailResult.error);
+        console.log('📧 Calling sendOwnerWelcomeEmail...');
+        
+        emailResult = await sendOwnerWelcomeEmail({
+          owner_email: owner.owner_email,
+          owner_name: owner.owner_name,
+          owner_id: owner.owner_id,
+          password: owner.password,
+          ssid: owner.ssid
+        });
+
+        if (emailResult.success) {
+          console.log('✅ Email sent successfully to:', owner.owner_email);
+        } else {
+          console.error('⚠️ Email send failed:', emailResult.error);
+        }
       }
     } catch (emailError) {
-      console.error('❌ Email exception:', emailError);
+      console.error('❌ Email exception:', emailError.message);
       emailResult = { success: false, error: emailError.message };
     }
+    console.log('📧 ========== EMAIL SECTION END ==========\n');
 
-    // Response
+    // ===== RESPONSE =====
     const response = {
       success: true,
       message: 'Owner created successfully',
@@ -1880,21 +1806,62 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       },
       qr_image: `/qrcodes/${owner.owner_id}-single.png`,
       recordUrl,
+      // ✅ Include email status in response
       emailSent: emailResult.success,
       emailError: !emailResult.success ? emailResult.error : null
     };
 
-    console.log('🎉 Response prepared - emailSent:', emailResult.success);
-    console.log('🎯 ============================================');
-    console.log('');
+    console.log('🎉 Response prepared');
+    console.log('📧 Email sent:', emailResult.success);
+    console.log('🎯 ========================================\n');
     
     res.json(response);
 
   } catch (err) {
-    console.error('❌ CRITICAL ERROR:', err);
+    console.error('❌ CRITICAL ERROR:', err.message);
+    console.error('❌ Stack:', err.stack);
     res.status(500).json({ 
       message: 'Failed to create owner',
       error: err.message
+    });
+  }
+});
+
+// ============================================
+// 3️⃣ OPTIONAL: Test endpoint to verify email works
+// ============================================
+app.get('/api/test/email/:email', async (req, res) => {
+  try {
+    const testEmail = req.params.email;
+    
+    console.log('📧 Testing email send to:', testEmail);
+    
+    const info = await transporter.sendMail({
+      from: `"DoorBell Test" <${process.env.SMTP_USER}>`,
+      to: testEmail,
+      subject: '✅ Test Email from DoorBell',
+      html: `
+        <h2>🎉 Email Configuration Working!</h2>
+        <p>If you receive this, your SMTP setup is correct.</p>
+        <p>Time: ${new Date().toISOString()}</p>
+      `,
+      text: `Email working! Time: ${new Date().toISOString()}`
+    });
+
+    console.log('✅ Test email sent:', info.messageId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test email sent successfully',
+      messageId: info.messageId,
+      to: testEmail
+    });
+  } catch (err) {
+    console.error('❌ Test email failed:', err);
+    res.status(500).json({ 
+      success: false, 
+      error: err.message,
+      code: err.code
     });
   }
 });
