@@ -1574,41 +1574,41 @@ app.post('/api/ring', (req, res) => {
 //   }
 // };
 
-app.get('/api/agent/me', authMiddleware, (req, res) => res.json({ agent: req.agent }));
+// app.get('/api/agent/me', authMiddleware, (req, res) => res.json({ agent: req.agent }));
 
-app.post('/api/ring', (req, res) => {
-  const token = req.headers['x-api-key'];
-  if (token !== API_KEY) {
-    console.log('Ã¢ÂÅ’ Invalid API key');
-    return res.status(403).json({ success: false, message: 'Forbidden' });
-  }
+// app.post('/api/ring', (req, res) => {
+//   const token = req.headers['x-api-key'];
+//   if (token !== API_KEY) {
+//     console.log('Ã¢ÂÅ’ Invalid API key');
+//     return res.status(403).json({ success: false, message: 'Forbidden' });
+//   }
   
-  // Check MQTT connection status
-  if (!mqttConnected) {
-    console.error('Ã¢ÂÅ’ MQTT not connected, cannot ring bell');
-    return res.status(503).json({ 
-      success: false, 
-      message: 'MQTT broker not connected' 
-    });
-  }
+//   // Check MQTT connection status
+//   if (!mqttConnected) {
+//     console.error('Ã¢ÂÅ’ MQTT not connected, cannot ring bell');
+//     return res.status(503).json({ 
+//       success: false, 
+//       message: 'MQTT broker not connected' 
+//     });
+//   }
   
-  console.log('Ã°Å¸â€â€ Publishing ring command to MQTT...');
+//   console.log('Ã°Å¸â€â€ Publishing ring command to MQTT...');
   
-  // Publish with callback to confirm
-  mqttClient.publish('doorbell/trigger', 'buzz', { qos: 1 }, (err) => {
-    if (err) {
-      console.error('Ã¢ÂÅ’ MQTT publish failed:', err);
-      return res.status(500).json({ 
-        success: false, 
-        message: 'Failed to publish MQTT message',
-        error: err.message 
-      });
-    }
+//   // Publish with callback to confirm
+//   mqttClient.publish('doorbell/trigger', 'buzz', { qos: 1 }, (err) => {
+//     if (err) {
+//       console.error('Ã¢ÂÅ’ MQTT publish failed:', err);
+//       return res.status(500).json({ 
+//         success: false, 
+//         message: 'Failed to publish MQTT message',
+//         error: err.message 
+//       });
+//     }
     
-    console.log('Ã¢Å“â€¦ MQTT message published successfully');
-    res.json({ success: true, message: 'Bell ring command sent' });
-  });
-});
+//     console.log('Ã¢Å“â€¦ MQTT message published successfully');
+//     res.json({ success: true, message: 'Bell ring command sent' });
+//   });
+// });
 
 /* ----------------------- OWNER CREATION ----------------------- */
 // app.post('/api/owner/create', async (req, res) => {
