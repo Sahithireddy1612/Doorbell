@@ -1931,9 +1931,7 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       owner_email,
       owner_phone,
       ssid,
-      has_dev_password: !!dev_password,
-      has_google_client_id: !!google_client_id,
-      has_google_client_secret: !!google_client_secret
+      has_dev_password: !!dev_password
     });
 
     // ===== VALIDATION =====
@@ -1966,7 +1964,7 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
        google_client_id, google_client_secret)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING owner_id, owner_name, owner_email, owner_phone, ssid, dev_password, 
-                accesspoint_url, password, google_client_id, google_client_secret, created_at
+                accesspoint_url, password, google_client_id, google_client_secret
     `;
 
     const { rows } = await pool.query(insert, [
@@ -1988,9 +1986,7 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
     console.log('✅ Owner created:', {
       owner_id: owner.owner_id,
       owner_email: owner.owner_email,
-      owner_name: owner.owner_name,
-      has_auto_password: !!owner.password,
-      password_value: owner.password || 'NOT GENERATED'
+      has_auto_password: !!owner.password
     });
 
     // ===== GENERATE QR CODE =====
@@ -2000,60 +1996,35 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
     await QRCode.toFile(qrPath, recordUrl, { width: 400 });
     console.log('✅ QR code saved:', qrPath);
 
-    // ===== 🔥 SEND WELCOME EMAIL (CRITICAL SECTION!) =====
-    console.log('\n📧 ========== EMAIL SECTION START ==========');
+    // ===== ⚡ SEND WELCOME EMAIL (THIS IS THE CRITICAL PART!) =====
+   console.log('\n📧 ========== EMAIL SECTION START ==========');
     let emailResult = { success: false, error: 'Not attempted' };
     
-    // 🔥 FORCE EMAIL SEND - Don't skip even if no password
     try {
-      // Use a temporary password if database didn't generate one
-      const emailPassword = owner.password || 'TempPass123'; // Fallback password
-      
+      // ✅ MAKE SURE password exists before sending email
       if (!owner.password) {
-        console.warn('⚠️ No auto-generated password found, using temporary password');
-        console.warn('⚠️ You may need to add a database trigger to auto-generate passwords');
+        console.warn('⚠️ No auto-generated password found');
+        emailResult = { success: false, error: 'No password generated' };
       } else {
-        console.log('✅ Auto-generated password found:', owner.password);
-      }
-      
-      console.log('📧 Preparing email for:', owner.owner_email);
-      console.log('📧 Owner details:', {
-        owner_email: owner.owner_email,
-        owner_name: owner.owner_name,
-        owner_id: owner.owner_id,
-        ssid: owner.ssid,
-        has_password: !!emailPassword
-      });
+        console.log('📧 Password available:', owner.password);
+        console.log('📧 Calling sendOwnerWelcomeEmail...');
+        
+        emailResult = await sendOwnerWelcomeEmail({
+          owner_email: owner.owner_email,
+          owner_name: owner.owner_name,
+          owner_id: owner.owner_id,
+          password: owner.password,
+          ssid: owner.ssid
+        });
 
-      // 🔥 CALL EMAIL FUNCTION
-      console.log('📧 Calling sendOwnerWelcomeEmail...');
-      emailResult = await sendOwnerWelcomeEmail({
-        owner_email: owner.owner_email,
-        owner_name: owner.owner_name,
-        owner_id: owner.owner_id,
-        password: emailPassword,
-        ssid: owner.ssid
-      });
-
-      if (emailResult.success) {
-        console.log('✅ ==========================================');
-        console.log('✅ EMAIL SENT SUCCESSFULLY!');
-        console.log('✅ Recipient:', owner.owner_email);
-        console.log('✅ Message ID:', emailResult.messageId);
-        console.log('✅ ==========================================');
-      } else {
-        console.error('❌ ==========================================');
-        console.error('❌ EMAIL SEND FAILED!');
-        console.error('❌ Error:', emailResult.error);
-        console.error('❌ Code:', emailResult.code);
-        console.error('❌ ==========================================');
+        if (emailResult.success) {
+          console.log('✅ Email sent successfully to:', owner.owner_email);
+        } else {
+          console.error('⚠️ Email send failed:', emailResult.error);
+        }
       }
     } catch (emailError) {
-      console.error('❌ ==========================================');
-      console.error('❌ EMAIL EXCEPTION CAUGHT!');
-      console.error('❌ Error message:', emailError.message);
-      console.error('❌ Error stack:', emailError.stack);
-      console.error('❌ ==========================================');
+      console.error('❌ Email exception:', emailError.message);
       emailResult = { success: false, error: emailError.message };
     }
     console.log('📧 ========== EMAIL SECTION END ==========\n');
@@ -2074,9 +2045,9 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
       },
       qr_image: `/qrcodes/${owner.owner_id}-single.png`,
       recordUrl,
+      // ✅ Include email status in response
       emailSent: emailResult.success,
-      emailError: !emailResult.success ? emailResult.error : null,
-      emailMessageId: emailResult.messageId || null
+      emailError: !emailResult.success ? emailResult.error : null
     };
 
     console.log('🎉 Response prepared');
@@ -2086,12 +2057,8 @@ app.post('/api/owner/create', authMiddleware, async (req, res) => {
     res.json(response);
 
   } catch (err) {
-    console.error('❌ ==========================================');
-    console.error('❌ CRITICAL ERROR IN CREATE OWNER');
-    console.error('❌ Error message:', err.message);
-    console.error('❌ Error stack:', err.stack);
-    console.error('❌ ==========================================\n');
-    
+    console.error('❌ CRITICAL ERROR:', err.message);
+    console.error('❌ Stack:', err.stack);
     res.status(500).json({ 
       message: 'Failed to create owner',
       error: err.message
