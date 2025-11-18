@@ -25,26 +25,73 @@ const { Pool } = pkg;
 const app = express();
 
 const API_KEY = 'doorbell123'; // simple protection
-const mqttClient = mqtt.connect('mqtt://broker.hivemq.com');
+const MQTT_BROKER = process.env.MQTT_BROKER || 'mqtt://broker.hivemq.com';
+const MQTT_OPTIONS = {
+  clientId: `doorbell_server_${Math.random().toString(16).slice(3)}`,
+  clean: true,
+  connectTimeout: 10000,
+  reconnectPeriod: 5000,
+  keepalive: 60
+};
+
+console.log('🔌 Connecting to MQTT broker:', MQTT_BROKER);
+const mqttClient = mqtt.connect(MQTT_BROKER, MQTT_OPTIONS);
+
 let mqttConnected = false;
+let mqttConnectionAttempts = 0;
+const MAX_CONNECTION_ATTEMPTS = 10;
 
 mqttClient.on('connect', () => {
-  console.log('ÃƒÂ¢Ã…â€œÃ¢â‚¬Â¦ MQTT connected to broker.hivemq.com');
+  console.log('✅ ========================================');
+  console.log('✅ MQTT CONNECTED to', MQTT_BROKER);
+  console.log('✅ Client ID:', mqttClient.options.clientId);
+  console.log('✅ ========================================');
   mqttConnected = true;
+  mqttConnectionAttempts = 0;
+  
+  // Subscribe to important topics
+  mqttClient.subscribe('doorbell/#', { qos: 1 }, (err) => {
+    if (err) {
+      console.error('❌ MQTT subscribe error:', err);
+    } else {
+      console.log('✅ Subscribed to doorbell topics');
+    }
+  });
 });
 
 mqttClient.on('error', (err) => {
-  console.error('ÃƒÂ¢Ã‚ÂÃ…â€™ MQTT connection error:', err);
+  console.error('❌ ========================================');
+  console.error('❌ MQTT CONNECTION ERROR:', err.message);
+  console.error('❌ Code:', err.code);
+  console.error('❌ ========================================');
   mqttConnected = false;
+  mqttConnectionAttempts++;
+  
+  if (mqttConnectionAttempts >= MAX_CONNECTION_ATTEMPTS) {
+    console.error('❌ Max MQTT connection attempts reached. Please check your MQTT broker.');
+  }
 });
 
 mqttClient.on('close', () => {
-  console.log('ÃƒÂ¢Ã…Â¡ ÃƒÂ¯Ã‚Â¸Ã‚Â MQTT connection closed');
+  console.log('⚠️ MQTT connection closed');
   mqttConnected = false;
 });
 
 mqttClient.on('reconnect', () => {
-  console.log('ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ¢â‚¬Å¾ MQTT reconnecting...');
+  console.log('🔄 MQTT reconnecting... (attempt ' + (mqttConnectionAttempts + 1) + ')');
+});
+
+mqttClient.on('offline', () => {
+  console.log('📴 MQTT client offline');
+  mqttConnected = false;
+});
+
+mqttClient.on('message', (topic, message) => {
+  console.log('📨 MQTT Message received:', {
+    topic,
+    message: message.toString(),
+    timestamp: new Date().toISOString()
+  });
 });
 
 
@@ -1516,40 +1563,195 @@ app.post('/upload/google-drive', upload.single('video'), async (req, res) => {
 // ================================================
 // 4. Ring Doorbell (already exists, just confirming)
 // ================================================
-app.post('/api/ring', (req, res) => {
-  const token = req.headers['x-api-key'];
-  if (token !== API_KEY) return res.status(403).json({ success: false });
+app.post('/api/ring', async (req, res) => {
+  try {
+    console.log('\n🔔 ========== DOORBELL RING REQUEST ==========');
+    
+    // Check API key
+    const token = req.headers['x-api-key'];
+    if (token !== API_KEY) {
+      console.error('❌ Invalid API key');
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Invalid API key' 
+      });
+    }
+    
+    console.log('✅ API key validated');
+    
+    // Check MQTT connection
+    if (!mqttConnected) {
+      console.error('❌ MQTT not connected');
+      return res.status(503).json({ 
+        success: false, 
+        message: 'MQTT broker not connected. Please try again.' 
+      });
+    }
+    
+    console.log('✅ MQTT is connected');
+    
+    // Get owner ID from request (optional)
+    const { ownerId, message: customMessage } = req.body || {};
+    
+    const ringPayload = {
+      action: 'ring',
+      timestamp: Date.now(),
+      ownerId: ownerId || 'all',
+      message: customMessage || 'Someone is at the door!'
+    };
+    
+    const ringTopic = ownerId 
+      ? `doorbell/${ownerId}/trigger` 
+      : 'doorbell/trigger';
+    
+    console.log('📤 Publishing to MQTT:', {
+      topic: ringTopic,
+      payload: ringPayload
+    });
+    
+    // Publish with callback for confirmation
+    mqttClient.publish(
+      ringTopic, 
+      JSON.stringify(ringPayload), 
+      { qos: 1, retain: false }, 
+      (err) => {
+        if (err) {
+          console.error('❌ MQTT publish error:', err);
+          return res.status(500).json({ 
+            success: false, 
+            message: 'Failed to ring doorbell',
+            error: err.message 
+          });
+        }
+        
+        console.log('✅ MQTT message published successfully!');
+        console.log('🔔 ========================================\n');
+        
+        return res.json({ 
+          success: true, 
+          message: 'Doorbell rang successfully!',
+          topic: ringTopic,
+          payload: ringPayload
+        });
+      }
+    );
+    
+  } catch (err) {
+    console.error('❌ Ring error:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Internal server error',
+      error: err.message 
+    });
+  }
+});
 
-  if (!mqttConnected) return res.status(503).json({ success: false, message: 'MQTT not connected' });
+// 3️⃣ ADD THESE HELPER ENDPOINTS FOR DEBUGGING:
 
-  mqttClient.publish('doorbell/trigger', 'buzz', { qos: 1 }, (err) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-    res.json({ success: true, message: 'Bell rang!' });
+// Check MQTT status
+app.get('/api/mqtt/status', (req, res) => {
+  res.json({
+    success: true,
+    connected: mqttConnected,
+    broker: MQTT_BROKER,
+    clientId: mqttClient.options.clientId,
+    connectionAttempts: mqttConnectionAttempts,
+    uptime: process.uptime()
   });
 });
 
-// 1ï¸âƒ£ FIRST: Add this function BEFORE the endpoint (if not already present)
+// Test MQTT connection
+app.post('/api/mqtt/test', (req, res) => {
+  if (!mqttConnected) {
+    return res.status(503).json({
+      success: false,
+      message: 'MQTT not connected'
+    });
+  }
+  
+  const testTopic = 'doorbell/test';
+  const testMessage = {
+    test: true,
+    timestamp: Date.now(),
+    message: 'Test message from server'
+  };
+  
+  mqttClient.publish(testTopic, JSON.stringify(testMessage), { qos: 1 }, (err) => {
+    if (err) {
+      return res.status(500).json({
+        success: false,
+        error: err.message
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Test message published',
+      topic: testTopic,
+      payload: testMessage
+    });
+  });
+});
+
+// 4️⃣ ADD GRACEFUL SHUTDOWN:
+
+process.on('SIGINT', () => {
+  console.log('\n🛑 Shutting down server...');
+  
+  if (mqttClient) {
+    mqttClient.end(false, () => {
+      console.log('✅ MQTT client closed');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n🛑 SIGTERM received, shutting down...');
+  
+  if (mqttClient) {
+    mqttClient.end(false, () => {
+      console.log('✅ MQTT client closed');
+      process.exit(0);
+    });
+  } else {
+    process.exit(0);
+  }
+});
+// ✅ FIXED EMAIL FUNCTION
+// Add this BEFORE your /api/owner/create endpoint
+
 async function sendOwnerWelcomeEmail(ownerData) {
-  console.log('ðŸ“§ ========== SENDING WELCOME EMAIL ==========');
+  console.log('📧 ========== SENDING WELCOME EMAIL ==========');
   
   try {
     const { owner_email, owner_name, owner_id, password, ssid } = ownerData;
     
-    console.log('ðŸ“§ Email Details:', {
+    console.log('📧 Email Details:', {
       to: owner_email,
       name: owner_name,
       owner_id,
       has_password: !!password
     });
 
-    // Validate
+    // Validate required fields
     if (!owner_email) throw new Error('owner_email is required');
     if (!owner_name) throw new Error('owner_name is required');
     if (!password) throw new Error('password is required');
 
+    // Check SMTP configuration
     if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      throw new Error('SMTP credentials not configured');
+      throw new Error('SMTP credentials not configured in .env file');
     }
+
+    console.log('📧 SMTP Config:', {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      user: process.env.SMTP_USER,
+      has_password: !!process.env.SMTP_PASS
+    });
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -1557,112 +1759,336 @@ async function sendOwnerWelcomeEmail(ownerData) {
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
-          .container { background: #fff; border-radius: 12px; padding: 32px; }
-          .header { text-align: center; border-bottom: 2px solid #f0f0f0; padding-bottom: 24px; }
-          .credential-box { background: #f8f9fa; border-left: 4px solid #4285f4; padding: 20px; margin: 20px 0; border-radius: 8px; }
-          .credential-item { background: #fff; padding: 16px; margin: 12px 0; border-radius: 8px; border: 1px solid #e0e0e0; }
-          .label { font-size: 11px; color: #666; text-transform: uppercase; margin-bottom: 6px; font-weight: 600; }
-          .value { font-size: 18px; font-weight: 700; color: #1a1a1a; font-family: monospace; word-break: break-all; }
-          .warning { background: #fff3cd; border-left: 4px solid #ffc107; padding: 16px; margin: 20px 0; border-radius: 8px; }
+          body { 
+            font-family: Arial, sans-serif; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: #f5f5f5; 
+          }
+          .container { 
+            background: #fff; 
+            border-radius: 12px; 
+            padding: 32px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          }
+          .header { 
+            text-align: center; 
+            border-bottom: 2px solid #f0f0f0; 
+            padding-bottom: 24px; 
+            margin-bottom: 24px;
+          }
+          .header h1 {
+            color: #1a1a1a;
+            margin: 16px 0 8px;
+            font-size: 28px;
+          }
+          .header p {
+            color: #666;
+            margin: 0;
+            font-size: 16px;
+          }
+          .credential-box { 
+            background: #f8f9fa; 
+            border-left: 4px solid #4285f4; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border-radius: 8px; 
+          }
+          .credential-box h3 {
+            margin: 0 0 16px 0;
+            color: #1a1a1a;
+            font-size: 18px;
+          }
+          .credential-item { 
+            background: #fff; 
+            padding: 16px; 
+            margin: 12px 0; 
+            border-radius: 8px; 
+            border: 1px solid #e0e0e0; 
+          }
+          .label { 
+            font-size: 11px; 
+            color: #666; 
+            text-transform: uppercase; 
+            margin-bottom: 6px; 
+            font-weight: 600; 
+            display: block;
+          }
+          .value { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: #1a1a1a; 
+            font-family: 'Courier New', monospace; 
+            word-break: break-all; 
+          }
+          .warning { 
+            background: #fff3cd; 
+            border-left: 4px solid #ffc107; 
+            padding: 16px; 
+            margin: 20px 0; 
+            border-radius: 8px; 
+          }
+          .warning strong {
+            color: #856404;
+          }
+          .info-box {
+            background: #e8f4fd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #0d47a1;
+          }
+          .info-box h3 {
+            margin: 0 0 12px 0;
+            color: #0d47a1;
+            font-size: 16px;
+          }
+          .info-box ol {
+            margin: 0;
+            padding-left: 24px;
+            color: #1a1a1a;
+          }
+          .info-box li {
+            margin: 8px 0;
+            line-height: 1.5;
+          }
+          .footer {
+            text-align: center;
+            padding-top: 24px;
+            border-top: 2px solid #f0f0f0;
+            color: #666;
+            font-size: 14px;
+            margin-top: 24px;
+          }
         </style>
       </head>
       <body>
         <div class="container">
           <div class="header">
-            <h1 style="color: #1a1a1a; margin: 0;">ðŸ”” Welcome to DoorBell!</h1>
-            <p style="color: #666; margin: 8px 0 0 0;">Your Smart Doorbell Account is Ready</p>
+            <div style="font-size: 48px; margin-bottom: 16px;">🔔</div>
+            <h1>Welcome to DoorBell!</h1>
+            <p>Your Smart Doorbell Account is Ready</p>
           </div>
           
           <div style="padding: 24px 0;">
-            <p style="font-size: 18px;">Hello <strong>${owner_name}</strong>,</p>
-            <p>Your DoorBell owner account has been created! Use these credentials to login to the Owner Dashboard.</p>
+            <p style="font-size: 18px; margin-bottom: 16px;">Hello <strong>${owner_name}</strong>,</p>
+            <p style="margin-bottom: 20px; line-height: 1.6;">Your DoorBell owner account has been created successfully! Use these credentials to login to the Owner Dashboard.</p>
             
             <div class="credential-box">
-              <h3 style="margin: 0 0 16px 0;">ðŸ”‘ Your Login Credentials</h3>
+              <h3>🔑 Your Login Credentials</h3>
               
               <div class="credential-item">
-                <div class="label">Owner ID</div>
+                <span class="label">Owner ID</span>
                 <div class="value">${owner_id}</div>
               </div>
               
               <div class="credential-item">
-                <div class="label">Email Address</div>
+                <span class="label">Email Address</span>
                 <div class="value">${owner_email}</div>
               </div>
               
               <div class="credential-item">
-                <div class="label">Temporary Password</div>
+                <span class="label">Temporary Password</span>
                 <div class="value">${password}</div>
               </div>
             </div>
             
             <div class="warning">
-              <strong>âš ï¸ Security Notice:</strong> Please change your password after first login.
+              <strong>⚠️ Security Notice:</strong> Please change your password after first login for security.
             </div>
             
-            <div style="background: #e8f4fd; padding: 20px; margin: 20px 0; border-radius: 8px;">
-              <h3 style="margin: 0 0 12px 0; color: #0d47a1;">ðŸ“± How to Login:</h3>
-              <ol style="margin: 0; padding-left: 24px;">
+            <div class="info-box">
+              <h3>📱 How to Login:</h3>
+              <ol>
                 <li>Open the DoorBell mobile app</li>
                 <li>Tap "Owner Login"</li>
                 <li>Enter your email and password</li>
-                <li>Access your dashboard</li>
+                <li>Access your dashboard and manage your doorbell</li>
               </ol>
             </div>
             
             <div class="credential-box">
-              <h3 style="margin: 0 0 8px 0;">ðŸ“¡ Device Configuration</h3>
-              <p style="margin: 0;"><strong>WiFi Network:</strong> ${ssid}</p>
+              <h3>📡 Device Configuration</h3>
+              <p style="margin: 8px 0;"><strong>WiFi Network:</strong> ${ssid}</p>
+              <p style="margin: 8px 0; font-size: 14px; color: #666;">Your doorbell will connect to this network</p>
             </div>
           </div>
           
-          <div style="text-align: center; padding-top: 24px; border-top: 2px solid #f0f0f0; color: #666; font-size: 14px;">
-            <p style="margin: 0;">DoorBell Smart Security System</p>
+          <div class="footer">
+            <p style="margin: 0; font-weight: 600;">DoorBell Smart Security System</p>
+            <p style="margin: 8px 0 0 0; font-size: 12px;">This is an automated message, please do not reply</p>
           </div>
         </div>
       </body>
       </html>
     `;
 
-    console.log('ðŸ“§ Sending email to:', owner_email);
+    const plainText = `
+Welcome to DoorBell, ${owner_name}!
+
+Your Login Credentials:
+- Owner ID: ${owner_id}
+- Email: ${owner_email}
+- Temporary Password: ${password}
+
+How to Login:
+1. Open the DoorBell mobile app
+2. Tap "Owner Login"
+3. Enter your email and password
+4. Access your dashboard
+
+Device Configuration:
+- WiFi Network: ${ssid}
+
+⚠️ Security Notice: Please change your password after first login.
+
+---
+DoorBell Smart Security System
+    `.trim();
+
+    console.log('📧 Attempting to send email...');
 
     const mailOptions = {
       from: `"DoorBell System" <${process.env.SMTP_USER}>`,
       to: owner_email,
-      subject: 'ðŸŽ‰ Welcome to DoorBell - Your Account is Ready!',
+      subject: '🎉 Welcome to DoorBell - Your Account is Ready!',
       html: emailHtml,
-      text: `Welcome to DoorBell, ${owner_name}!\n\nYour Login Credentials:\n- Owner ID: ${owner_id}\n- Email: ${owner_email}\n- Password: ${password}\n\nLogin via the DoorBell mobile app.\n\nYour WiFi: ${ssid}`
+      text: plainText
     };
 
     const info = await transporter.sendMail(mailOptions);
 
-    console.log('âœ… EMAIL SENT SUCCESSFULLY!');
-    console.log('âœ… Message ID:', info.messageId);
-    console.log('âœ… Response:', info.response);
-    console.log('ðŸ“§ ========================================\n');
+    console.log('✅ EMAIL SENT SUCCESSFULLY!');
+    console.log('✅ Message ID:', info.messageId);
+    console.log('✅ Response:', info.response);
+    console.log('✅ Accepted:', info.accepted);
+    console.log('✅ Rejected:', info.rejected);
+    console.log('📧 ========================================\n');
 
     return { 
       success: true, 
       messageId: info.messageId,
-      response: info.response 
+      response: info.response,
+      accepted: info.accepted
     };
 
   } catch (error) {
-    console.error('âŒ ========================================');
-    console.error('âŒ EMAIL SEND FAILED!');
-    console.error('âŒ Error:', error.message);
-    console.error('âŒ Code:', error.code);
-    console.error('âŒ ========================================\n');
+    console.error('❌ ========================================');
+    console.error('❌ EMAIL SEND FAILED!');
+    console.error('❌ Error:', error.message);
+    console.error('❌ Code:', error.code);
+    console.error('❌ Command:', error.command);
+    console.error('❌ Stack:', error.stack);
+    console.error('❌ ========================================\n');
     
     return { 
       success: false, 
       error: error.message,
-      code: error.code
+      code: error.code,
+      command: error.command
     };
   }
 }
 
+// ✅ TEST ENDPOINT - Use this to verify email works
+app.get('/api/test/email-config', async (req, res) => {
+  try {
+    console.log('🔍 Testing email configuration...');
+    
+    // Test 1: Check environment variables
+    const envCheck = {
+      SMTP_HOST: !!process.env.SMTP_HOST,
+      SMTP_PORT: !!process.env.SMTP_PORT,
+      SMTP_USER: !!process.env.SMTP_USER,
+      SMTP_PASS: !!process.env.SMTP_PASS,
+      values: {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER
+      }
+    };
+    
+    console.log('📧 Environment check:', envCheck);
+    
+    // Test 2: Verify transporter
+    await transporter.verify();
+    console.log('✅ SMTP connection verified!');
+    
+    res.json({
+      success: true,
+      message: 'Email configuration is valid',
+      config: envCheck,
+      smtpVerified: true
+    });
+    
+  } catch (error) {
+    console.error('❌ Email config test failed:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Email configuration failed',
+      error: error.message,
+      code: error.code
+    });
+  }
+});
+
+// ✅ SEND TEST EMAIL ENDPOINT
+app.post('/api/test/send-email', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email address required' 
+      });
+    }
+    
+    console.log('📧 Sending test email to:', email);
+    
+    const info = await transporter.sendMail({
+      from: `"DoorBell Test" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: '✅ Test Email from DoorBell System',
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #10b981;">✅ Email Configuration Working!</h2>
+          <p>If you receive this email, your SMTP configuration is correct.</p>
+          <div style="background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>Test Details:</strong></p>
+            <p>Time: ${new Date().toISOString()}</p>
+            <p>To: ${email}</p>
+            <p>From: ${process.env.SMTP_USER}</p>
+            <p>Host: ${process.env.SMTP_HOST}</p>
+          </div>
+          <p style="color: #666; font-size: 14px;">This is an automated test message from your DoorBell backend.</p>
+        </div>
+      `,
+      text: `Email Configuration Test\n\nIf you see this, your email setup is working!\n\nTime: ${new Date().toISOString()}\nTo: ${email}`
+    });
+
+    console.log('✅ Test email sent successfully!');
+    console.log('Message ID:', info.messageId);
+    
+    res.json({ 
+      success: true, 
+      message: 'Test email sent successfully',
+      messageId: info.messageId,
+      to: email,
+      accepted: info.accepted,
+      rejected: info.rejected
+    });
+    
+  } catch (error) {
+    console.error('❌ Test email failed:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      code: error.code
+    });
+  }
+});
 // 2ï¸âƒ£ THEN: Replace your /api/owner/create endpoint with this COMPLETE version
 app.post('/api/owner/create', authMiddleware, async (req, res) => {
   try {
